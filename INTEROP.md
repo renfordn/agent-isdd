@@ -33,6 +33,37 @@ This is a **one-directional handoff**: agent-isdd does not resume, monitor, or d
 Green→Refactor review pause (via `SendMessage` to its agent id, per `agent-tdd`'s own contract)
 is outside agent-isdd's scope once the handoff is made.
 
+## ← agent-tdd / code-reviewer (rollback request)
+
+Sometimes `agent-tdd`'s Green→Refactor review pause (or `code-reviewer`) discovers that the
+*task* itself — not just the implementation — was wrong. There is no cross-plugin IPC to build
+a live push channel for this, so the return path is a documented marker convention plus a
+check `agent-isdd` performs on its own re-entry, not agent-isdd reaching into `agent-tdd`'s
+active loop.
+
+**Marker format**, emitted as a line in the reporting agent's final report:
+
+```
+<!--SDD-ROLLBACK-REQUEST: target=<Requirements|Design|Tasks> reason="..."-->
+```
+
+**Automatic path**: when `agent-tdd:agent-TDD`'s (or `agent-tdd:test-author`'s) *initial* spawn
+report contains this marker, `hooks/subagent_report.py`'s `SubagentStop` handler recognizes it
+(independently of its normal narrative-report capture, which explicitly excludes
+implementation-phase reports) and writes `rollback_pending` to `workflow-state.json` plus a
+`Pending Rollback Request` line to `workflow-state.md`. The next `before-continue` hook
+(`workflow-manager`'s "Rollback Request Intake") checks for it first and routes into the
+Rewind Contract automatically.
+
+**Human-relay path**: this only works when agent-isdd is present in the same session as the
+`SubagentStop` event. `code-reviewer`'s findings, and any `agent-tdd` resume happening via
+`SendMessage` in a session agent-isdd isn't part of, have no automatic hook — the marker text
+is meant to be relayed by a human (or by whichever context is driving) directly into a message
+to agent-isdd, which `before-continue` also recognizes when present in user input.
+
+Do not treat this as a fully automatic guarantee: it is automatic exactly where a
+`SubagentStop` can observe the report, and human-relay everywhere else.
+
 ## → code-reviewer (review gate)
 
 agent-isdd never invokes `code-reviewer` directly. It is `agent-tdd`'s responsibility (per

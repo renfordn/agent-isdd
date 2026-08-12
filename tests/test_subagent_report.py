@@ -127,6 +127,83 @@ class SubagentReportTests(unittest.TestCase):
                 logged = fh.read()
             self.assertIn("Plan ready.", logged)
 
+    def test_rollback_marker_writes_rollback_pending_and_md_line(self):
+        with h.temp_git_repo() as repo, h.temp_home() as home:
+            feature_dir = h.feature_spec_dir(home, repo)
+            h.seed_state_file(feature_dir, title="My Feature", workflow_status="In Progress")
+            json_path = os.path.join(feature_dir, "workflow-state.json")
+            with open(json_path, "w", encoding="utf-8") as fh:
+                json.dump({"current_phase": "Implementation"}, fh)
+            transcript = os.path.join(home, "transcript.jsonl")
+            _write_transcript(
+                transcript,
+                [_assistant_line(
+                    '<!--SDD-ROLLBACK-REQUEST: target=Design reason="the interface was wrong"-->\n'
+                    "Green->Refactor review found a design-level issue."
+                )],
+            )
+            msg, rc = h.run_hook_message(
+                "subagent_report.py",
+                {"cwd": repo, "transcript_path": transcript},
+                env_extra={"HOME": home},
+            )
+            self.assertEqual(rc, 0)
+            self.assertIsNotNone(msg)
+
+            with open(json_path) as fh:
+                state = json.load(fh)
+            self.assertEqual(state["rollback_pending"]["target"], "Design")
+            self.assertEqual(state["rollback_pending"]["reason"], "the interface was wrong")
+            self.assertEqual(state["rollback_pending"]["source"], "agent-tdd")
+
+            md_path = os.path.join(feature_dir, "workflow-state.md")
+            with open(md_path) as fh:
+                md_text = fh.read()
+            self.assertIn("Pending Rollback Request", md_text)
+            self.assertIn("Design", md_text)
+
+    def test_rollback_marker_with_invalid_target_is_ignored(self):
+        with h.temp_git_repo() as repo, h.temp_home() as home:
+            feature_dir = h.feature_spec_dir(home, repo)
+            h.seed_state_file(feature_dir, title="My Feature", workflow_status="In Progress")
+            json_path = os.path.join(feature_dir, "workflow-state.json")
+            with open(json_path, "w", encoding="utf-8") as fh:
+                json.dump({"current_phase": "Implementation"}, fh)
+            transcript = os.path.join(home, "transcript.jsonl")
+            _write_transcript(
+                transcript,
+                [_assistant_line(
+                    '<!--SDD-ROLLBACK-REQUEST: target=NotAPhase reason="bogus"-->\nchit-chat'
+                )],
+            )
+            msg, rc = h.run_hook_message(
+                "subagent_report.py",
+                {"cwd": repo, "transcript_path": transcript},
+                env_extra={"HOME": home},
+            )
+            self.assertEqual(rc, 0)
+            self.assertIsNone(msg)
+            with open(json_path) as fh:
+                state = json.load(fh)
+            self.assertNotIn("rollback_pending", state)
+
+    def test_rollback_marker_without_active_state_is_silent(self):
+        with h.temp_git_repo() as repo, h.temp_home() as home:
+            transcript = os.path.join(home, "transcript.jsonl")
+            _write_transcript(
+                transcript,
+                [_assistant_line(
+                    '<!--SDD-ROLLBACK-REQUEST: target=Tasks reason="oops"-->\nreview note'
+                )],
+            )
+            msg, rc = h.run_hook_message(
+                "subagent_report.py",
+                {"cwd": repo, "transcript_path": transcript},
+                env_extra={"HOME": home},
+            )
+            self.assertEqual(rc, 0)
+            self.assertIsNone(msg)
+
     def test_missing_transcript_file_is_silent_no_crash(self):
         with h.temp_git_repo() as repo, h.temp_home() as home:
             feature_dir = h.feature_spec_dir(home, repo)

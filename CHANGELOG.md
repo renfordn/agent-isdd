@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.1.2
+
+### Added
+- Sibling-plugin hook reliability: hook points (state consistency, the implementation
+  handoff, mid-implementation rollback requests) are now verified/enforced rather than only
+  reminders to the model.
+- `hooks/state_consistency_check.py`: `PostToolUse` hook that verifies and repairs
+  `workflow-state.json` toward `workflow-state.md` on every write, logging the repair to
+  `recap.md` and `hook_history`. Never blocks.
+- `hooks/slice_spec_gate.py`: `PreToolUse` hard deny-gate on the Implementation Handoff —
+  blocks spawning `agent-tdd:agent-TDD`/`agent-tdd:test-author` when the constructed Slice
+  Spec is missing a required field per `INTEROP.md`'s mapping table.
+- `hooks/subagent_report.py`: recognizes a new `<!--SDD-ROLLBACK-REQUEST:...-->` marker so
+  `agent-tdd`'s review-pause report (or a human relaying `code-reviewer`'s findings) can
+  signal that a task — not just its implementation — was wrong; recorded as
+  `rollback_pending` in `workflow-state.json`.
+- `workflow-manager`'s "Rollback Request Intake" (part of `before-continue`): routes a
+  pending rollback into the existing Rewind Contract automatically, logged distinctly from a
+  routine rewind, with loop prevention on repeated requests.
+- `workflow-manager`'s "Mid-Phase Change Classification": one documented rule for whether a
+  mid-Design/mid-Tasks user change should redo the current phase in place or trigger a real
+  rewind.
+- `INTEROP.md`: new "← agent-tdd / code-reviewer (rollback request)" section documenting the
+  marker convention and its automatic-vs-human-relay scope.
+- `references/workflow-state.template.json`: additive `rollback_pending` field.
+
 ## 0.1.1
 
 ### Infra

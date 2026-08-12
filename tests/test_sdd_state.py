@@ -78,5 +78,87 @@ class SddStateTests(unittest.TestCase):
         self.assertFalse(sdd_state.is_pre_implementation({"workflow status": "Complete"}))
 
 
+class ParseStateJsonTests(unittest.TestCase):
+    def setUp(self):
+        sys.path.insert(0, h.HOOKS_DIR)
+        import importlib
+        self.sdd_state = importlib.import_module("sdd_state")
+
+    def test_missing_file_returns_empty_dict(self):
+        self.assertEqual(self.sdd_state.parse_state_json("/nonexistent/workflow-state.json"), {})
+
+    def test_malformed_json_returns_empty_dict(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "workflow-state.json")
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write("{not valid json")
+            self.assertEqual(self.sdd_state.parse_state_json(path), {})
+
+    def test_valid_json_parses(self):
+        import json
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "workflow-state.json")
+            with open(path, "w", encoding="utf-8") as fh:
+                json.dump({"current_phase": "Tasks"}, fh)
+            fields = self.sdd_state.parse_state_json(path)
+            self.assertEqual(fields.get("current_phase"), "Tasks")
+
+
+class RollbackPendingTests(unittest.TestCase):
+    def setUp(self):
+        sys.path.insert(0, h.HOOKS_DIR)
+        import importlib
+        self.sdd_state = importlib.import_module("sdd_state")
+
+    def _write_json(self, path, data):
+        import json
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(data, fh)
+
+    def test_read_returns_none_when_no_field(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "workflow-state.json")
+            self._write_json(path, {"current_phase": "Tasks"})
+            self.assertIsNone(self.sdd_state.read_rollback_pending(path))
+
+    def test_write_then_read_round_trip(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "workflow-state.json")
+            self._write_json(path, {"current_phase": "Tasks"})
+            self.sdd_state.write_rollback_pending(path, "Design", "task was wrong", "agent-tdd")
+            pending = self.sdd_state.read_rollback_pending(path)
+            self.assertEqual(pending.get("target"), "Design")
+            self.assertEqual(pending.get("reason"), "task was wrong")
+            self.assertEqual(pending.get("source"), "agent-tdd")
+            # other fields preserved
+            fields = self.sdd_state.parse_state_json(path)
+            self.assertEqual(fields.get("current_phase"), "Tasks")
+
+    def test_clear_removes_field(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "workflow-state.json")
+            self._write_json(path, {"current_phase": "Tasks"})
+            self.sdd_state.write_rollback_pending(path, "Design", "reason", "agent-tdd")
+            self.sdd_state.clear_rollback_pending(path)
+            self.assertIsNone(self.sdd_state.read_rollback_pending(path))
+
+    def test_write_creates_file_if_missing(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "workflow-state.json")
+            self.sdd_state.write_rollback_pending(path, "Requirements", "reason", "code-reviewer")
+            pending = self.sdd_state.read_rollback_pending(path)
+            self.assertEqual(pending.get("target"), "Requirements")
+
+    def test_clear_is_noop_when_file_missing(self):
+        # must not raise
+        self.sdd_state.clear_rollback_pending("/nonexistent/workflow-state.json")
+
+
 if __name__ == "__main__":
     unittest.main()

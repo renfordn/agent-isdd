@@ -32,6 +32,15 @@
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/commit_audit_gate.py\""
           }
         ]
+      },
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/slice_spec_gate.py\""
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -41,6 +50,10 @@
           {
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/phase_task_sync.py\""
+          },
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/state_consistency_check.py\""
           }
         ]
       }

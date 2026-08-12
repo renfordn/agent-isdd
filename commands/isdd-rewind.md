@@ -30,3 +30,10 @@ back to the user:
 
 If the contract refuses the rewind, present its concrete reason and next action instead of the
 rewind result.
+
+Note: the Rewind Contract can also be triggered automatically, without this command, via
+`workflow-manager`'s **Rollback Request Intake** (part of `before-continue`) when `agent-tdd`/
+`code-reviewer` flag mid-implementation that a task was wrong (see `INTEROP.md`'s "← agent-tdd
+/ code-reviewer (rollback request)" section). That path logs distinctly in `recap.md` as a
+"Rollback (mid-implementation)" entry rather than this command's plain "Rewind" entry, so the
+two are always distinguishable in the log even though both ultimately run the same contract.

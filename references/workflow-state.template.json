@@ -15,7 +15,8 @@
     "last_transition_actor": "Which actor performed the most recent phase transition (User | Spec Driven Development | Workflow Manager | UX Agent), extends workflow-state.md 'Current Owner' with transition-specific attribution.",
     "recap_path": "Relative path to this feature's recap.md file, so hooks and skills can locate it without recomputing the path.",
     "hook_history": "Append-only array of past hook invocations (hook name, outcome, decision, timestamp), extends workflow-state.md's single 'Last Hook Run/Outcome/Decision' fields with full history for repair and audit.",
-    "agent_nelly_available": "Cached boolean result of the agent-types-listing Availability Check (see workflow-manager 'Availability Check'), refreshed at the before-requirements and before-continue hooks; missing means not yet checked, not an error."
+    "agent_nelly_available": "Cached boolean result of the agent-types-listing Availability Check (see workflow-manager 'Availability Check'), refreshed at the before-requirements and before-continue hooks; missing means not yet checked, not an error.",
+    "rollback_pending": "Additive, optional field (see INTEROP.md's '<- agent-tdd / code-reviewer (rollback request)' section and workflow-manager's 'Rollback Request Intake'). Object with target/reason/source when a mid-implementation rollback request has been recognized but not yet acted on; absent means no pending rollback -- same 'missing = not yet checked/applicable' precedent as agent_nelly_available. Written by hooks/subagent_report.py, read and cleared by workflow-manager's before-continue hook. A 'rollback' kind of hook_history entry (decision: 'continue', outcome: 'Repaired State' or similar) is logged distinctly from a routine rewind's hook_history entry when this field is acted on."
   },
   "feature_slug": "<YYYY-MM-DD-feature-slug>",
   "current_phase": "<Requirements | Design | Tasks | Implementation | Complete>",
@@ -31,5 +32,6 @@
   "last_transition_actor": "<User | Spec Driven Development | Workflow Manager | UX Agent>",
   "recap_path": "recap/recap.md",
   "hook_history": [],
-  "agent_nelly_available": "<Yes | No | not yet checked>"
+  "agent_nelly_available": "<Yes | No | not yet checked>",
+  "rollback_pending": null
 }

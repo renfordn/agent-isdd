@@ -146,10 +146,17 @@ Every hook writes `Last Hook Run`, `Last Hook Outcome`, `Last Hook Decision`, `H
 
 ### `before-continue`
 
-Resolve the active feature folder, read `workflow-state.md`, call
-`agent-nelly:nelly-orchestrator` (if available, per the Availability Check) for the
-Intent-alignment check, detect stale/contradictory artifacts, repair if safe, decide the next
-action, write the result.
+Resolve the active feature folder, read `workflow-state.md`, check for a pending rollback
+request first (see "Rollback Request Intake" below — this takes priority over everything else
+in this hook), call `agent-nelly:nelly-orchestrator` (if available, per the Availability Check)
+for the Intent-alignment check, detect stale/contradictory artifacts, repair if safe, decide
+the next action, write the result.
+
+**Verification Step**: before reporting this hook's decision as final, confirm `recap.md` and
+`hook_history` actually reflect it — if `state_consistency_check.py` already repaired drift for
+this write (see its `hook_history` entry), trust that as evidence rather than re-deriving it;
+otherwise check directly. If `recap.md` didn't change for a claimed state-changing decision,
+pause instead of continuing.
 
 ### `before-requirements`
 
@@ -163,6 +170,11 @@ draft), confirm no invalid earlier phase is being skipped, write the result.
 Evaluate the `Requirements` completion checklist, update `workflow-state.md` and `recap.md`,
 decide advance-to-Design vs. pause, record the outcome.
 
+**Verification Step**: before advancing, confirm `recap.md` actually changed and a
+`hook_history` entry exists for this transition — a script can verify the JSON/MD fields agree
+(`state_consistency_check.py`), but only this hook can judge whether `recap.md`'s content is
+meaningful, not just present. If either check fails, pause rather than advance.
+
 ### `before-design`
 
 Confirm Requirements are approved, no blocking gap remains, no confirmation checkpoint is open,
@@ -173,12 +185,20 @@ enter native plan mode (see "Native Plan Mode Gate"), write the result.
 Evaluate the `Design` completion checklist, update `workflow-state.md` and `recap.md`, decide
 advance-to-Tasks vs. pause, record the outcome.
 
+**Verification Step**: same check as `after-requirements` — confirm `recap.md` changed and a
+`hook_history` entry exists before advancing; pause otherwise.
+
 ### `after-tasks`
 
 Evaluate the `Tasks` completion checklist, update `workflow-state.md` and `recap.md`, decide
 handoff, pause-for-implementation-request, or pause-for-blocker, record the outcome. If the
 checklist passes and handoff is the decision, exit native plan mode (see "Native Plan Mode Gate")
 before setting `Current Phase: Implementation`.
+
+**Verification Step**: same `recap.md`/`hook_history` check as the other `after-*` hooks. When
+the decision is `handoff`, additionally rely on `hooks/slice_spec_gate.py` — it hard-denies the
+`agent-tdd` spawn itself if the constructed Slice Spec is missing a required field, so this
+hook does not need to re-verify Slice Spec completeness by hand.
 
 ## Start Rules
 
@@ -298,6 +318,53 @@ equal to the current `Current Phase`. On a valid rewind:
 - Log the rewind (from, to, actor, timestamp) in `recap.md` and as a `hook_history` entry.
 - If the target is later than `Current Phase` or doesn't exist, refuse and pause with a
   concrete reason.
+
+## Rollback Request Intake
+
+Part of `before-continue` (see above) — checked first, before anything else in that hook.
+
+A rollback request reaches agent-isdd two ways, per `INTEROP.md`'s "← agent-tdd / code-reviewer
+(rollback request)" section: automatically, via `rollback_pending` in `workflow-state.json`
+(written by `hooks/subagent_report.py` when it recognizes the marker on `agent-tdd`'s initial
+spawn report), or via human-relay, when the marker text appears directly in the user's message
+re-entering agent-isdd.
+
+On either form:
+
+- Determine the target phase from the request. If it doesn't clearly map to what changed,
+  default to the more conservative (earlier) phase rather than guessing narrowly.
+- Invoke the existing Rewind Contract at that target phase — this is the only mutation path;
+  do not duplicate its state-mutation logic here.
+- Clear `rollback_pending` (via `sdd_state.clear_rollback_pending`) once the rewind is applied.
+- Log the event in `recap.md` distinctly from a routine rewind — e.g. "Rollback
+  (mid-implementation): <from> → <to>, reason: <reason>" rather than the Rewind Contract's
+  plain "Rewind: <from> → <to>" phrasing — so a later reader can tell a rollback (triggered by
+  an implementation-side finding) apart from a routine user-initiated rewind.
+- This applies even when `Workflow Status` is `Complete` — `before-continue` is the standard
+  re-entry point regardless of prior status, so a rollback request reopens the workflow at the
+  target phase rather than requiring manual state repair.
+- **Loop prevention**: if the same target phase is requested twice in a row, pause and surface
+  the repetition to the user rather than rewinding again automatically. (This is a new
+  convention for agent-isdd, styled after — not shared with — `agent-tdd`'s own "stop after 2
+  identical attempts" rule; no loop-prevention convention existed in this plugin before this.)
+
+## Mid-Phase Change Classification
+
+When the user raises a new idea or a differing task while Design or Tasks is the active phase,
+classify the change before reacting, reusing the Rewind Contract for its only mutation path:
+
+- Does satisfying the change require editing an **already-approved earlier phase's own
+  artifact** — a `requirements.md` EARS/constraint/non-goal for a Design-phase idea, or a
+  `design.md` Architecture/Data-Contracts-And-Interfaces section for a Tasks-phase idea? →
+  **earlier-phase invalidation** → invoke the Rewind Contract to that phase.
+- Does it only require editing the **current phase's own artifact**, staying inside what that
+  phase already owns? → **current-phase refinement** → redo the current phase in place; no
+  `Current Phase` change.
+- If ambiguous, ask exactly one narrow question: "Does this change *what* we're building
+  (would require editing `requirements.md`) or *how* we're building it (stays inside
+  `design.md`/`tasks.md`)?"
+- Always record the classification, its reasoning, and the branch taken in `recap.md`, so a
+  later reader can see why a mid-phase change did or didn't trigger a rewind.
 
 ## Task Tracker Sync
 

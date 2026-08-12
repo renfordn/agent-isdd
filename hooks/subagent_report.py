@@ -15,7 +15,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from sdd_state import active_state_file  # noqa: E402
+from sdd_state import active_state_file, write_rollback_pending  # noqa: E402
 
 # Markers that identify a spec-reviewer / tdd-planner report.
 SDD_MARKERS = re.compile(
@@ -28,9 +28,37 @@ SDD_MARKERS = re.compile(
 # can't be coincidentally triggered by unrelated natural-language text.
 EXPLICIT_MARKER = re.compile(r"<!--SDD-REPORT:(tdd-planner|spec-reviewer)-->")
 
+# Rollback-request marker per INTEROP.md's "<- agent-tdd / code-reviewer (rollback
+# request)" convention: agent-tdd's Green->Refactor review-pause report emits this when it
+# concludes the *task*, not just the code, was wrong. Recognized independently of
+# is_sdd_report -- agent-TDD/test-author's own narrative reports are otherwise explicitly
+# out of scope for this hook (see module docstring), but this structural marker is a
+# distinct, explicit signal crossing back into agent-isdd's territory, not a narrative
+# report to log.
+ROLLBACK_MARKER = re.compile(
+    r'<!--SDD-ROLLBACK-REQUEST:\s*target=(Requirements|Design|Tasks)\s+reason="([^"]*)"-->'
+)
+
 
 def is_sdd_report(text):
     return bool(EXPLICIT_MARKER.search(text) or SDD_MARKERS.search(text))
+
+
+def extract_rollback_request(text):
+    """Return {"target": ..., "reason": ...} if text contains a rollback marker, else None."""
+    m = ROLLBACK_MARKER.search(text)
+    if not m:
+        return None
+    return {"target": m.group(1), "reason": m.group(2)}
+
+
+def _append_pending_rollback_line(state_md_path, target, reason):
+    line = f'\n- Pending Rollback Request: target={target} reason="{reason}"\n'
+    try:
+        with open(state_md_path, "a", encoding="utf-8") as fh:
+            fh.write(line)
+    except OSError:
+        pass
 
 
 def extract_last_assistant_text(transcript_path):
@@ -78,10 +106,26 @@ def main():
         sys.exit(0)
 
     report = extract_last_assistant_text(payload.get("transcript_path", ""))
-    if not report or not is_sdd_report(report):
-        sys.exit(0)  # not an SDD phase-worker report — stay quiet
+    if not report:
+        sys.exit(0)
 
     feature_dir = os.path.dirname(state)
+
+    rollback = extract_rollback_request(report)
+    if rollback:
+        json_path = os.path.join(feature_dir, "workflow-state.json")
+        write_rollback_pending(json_path, rollback["target"], rollback["reason"], "agent-tdd")
+        _append_pending_rollback_line(state, rollback["target"], rollback["reason"])
+        print(json.dumps({"systemMessage": (
+            f"SDD: a rollback request was received (target={rollback['target']}) — "
+            "recorded as rollback_pending in workflow-state.json and workflow-state.md. "
+            "The next /isdd-continue will route it through the Rewind Contract."
+        )}))
+        sys.exit(0)
+
+    if not is_sdd_report(report):
+        sys.exit(0)  # not an SDD phase-worker report — stay quiet
+
     log = os.path.join(feature_dir, "recap", "subagent-reports.md")
     ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     entry = f"\n## Subagent report — {ts}\n\n{report}\n"

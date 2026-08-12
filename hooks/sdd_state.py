@@ -8,6 +8,7 @@ change is not migrated or supported by find_state_files/active_state_file -- non
 this canonical repo.
 """
 import glob
+import json
 import os
 import re
 
@@ -47,6 +48,52 @@ def parse_state(path):
             if key not in fields:
                 fields[key] = val
     return fields
+
+
+def parse_state_json(path):
+    """Load workflow-state.json into a dict, tolerant of a missing or malformed file.
+
+    Mirrors parse_state's tolerant-failure behavior for the .md sibling: never raises,
+    returns {} when the file can't be read or parsed.
+    """
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, ValueError):
+        return {}
+
+
+def write_state_json(path, data):
+    """Write a workflow-state.json dict back to disk. Shared by every hook that mutates it,
+    so the on-disk formatting (2-space indent, trailing newline) stays consistent."""
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=2)
+        fh.write("\n")
+
+
+def write_rollback_pending(path, target, reason, source):
+    """Set workflow-state.json's rollback_pending field, preserving other fields.
+
+    Creates the file if it doesn't exist yet -- workflow-state.json is normally scaffolded
+    alongside workflow-state.md, but a hook must not crash if it's momentarily missing.
+    """
+    data = parse_state_json(path)
+    data["rollback_pending"] = {"target": target, "reason": reason, "source": source}
+    write_state_json(path, data)
+
+
+def read_rollback_pending(path):
+    """Return the rollback_pending dict, or None when absent (no pending rollback)."""
+    return parse_state_json(path).get("rollback_pending")
+
+
+def clear_rollback_pending(path):
+    """Remove rollback_pending from workflow-state.json. No-op if file or field is missing."""
+    data = parse_state_json(path)
+    if "rollback_pending" not in data:
+        return
+    del data["rollback_pending"]
+    write_state_json(path, data)
 
 
 def is_pre_implementation(fields):
