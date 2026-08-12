@@ -1,6 +1,6 @@
 ---
 name: design-author
-description: "[Internal — use /isdd instead] Turn approved requirements into a concrete, testable design artifact — grounded in agent-nelly:nelly-orchestrator's holistic brief (when available) and planning-agent's two-pass codebase research, not just what's already in context."
+description: "[Internal — use /isdd instead] Turns approved requirements into a testable design.md, grounded in agent-nelly's brief (if available) and planning-agent's codebase research."
 ---
 
 # Design Author

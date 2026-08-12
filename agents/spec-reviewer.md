@@ -1,6 +1,6 @@
 ---
 name: spec-reviewer
-description: Review an existing spec, ticket, PRD, migration note, or requirement draft through a hard-gated EARS + TDD lens and return a gap analysis with rewritten EARS sections. Delegate to this agent from requirements-agent's review mode when source material is substantial enough to warrant an isolated pass. It does not talk to the user or approve anything — it returns a report for the orchestrator to confirm.
+description: Reviews an existing spec/ticket/PRD against an EARS+TDD gate and returns a gap analysis with rewritten EARS sections. Delegate from requirements-agent's review mode. Returns a report only — never talks to the user or approves.
 tools: Read, Grep, Glob
 model: sonnet
 ---

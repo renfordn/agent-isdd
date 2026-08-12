@@ -1,6 +1,6 @@
 ---
 name: planning-agent
-description: Two-pass codebase research for design-author and tdd-planner — a wide, fast sweep for candidate files followed by a deep, focused read of only what matters. Delegate to this agent before writing design.md or tasks.md so those artifacts are grounded in what the codebase actually looks like, not just what's already in context.
+description: Two-pass codebase research (fast wide sweep, then deep focused read) for design-author and tdd-planner. Delegate before writing design.md or tasks.md.
 tools: Read, Grep, Glob
 model: sonnet
 ---

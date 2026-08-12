@@ -1,6 +1,6 @@
 ---
 name: spec-driven-development
-description: Orchestrate an intent spec-driven workflow that moves from EARS-based requirements through design and tasks through focused companion skills with hard phase gates, a visible breadcrumb/checklist UI, and goal-aware memory — handing off to separate implementation, code-review, and memory plugins rather than owning them.
+description: Orchestrates the intent spec-driven workflow — EARS requirements through design and tasks — with hard phase gates, a visible breadcrumb/checklist UI, and goal-aware memory. Hands off to separate implementation/review/memory plugins.
 ---
 
 # Spec Driven Development
