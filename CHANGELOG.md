@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.1.4
+
+### Added
+- Deeper agent-nelly integration into agent-isdd's planning subagents (`planning-agent`,
+  `spec-reviewer`) and the calling skills that invoke them.
+- `agents/planning-agent.md`: accepts caller-passed agent-nelly `file-relevance` hits before
+  its wide-pass sweep and skips wide-pass grep/glob for candidate files with a fresh hit;
+  produces a concise, agent-friendly write-back summary (file or judged file-group) for every
+  file its deep pass actually reads; new "Nelly summaries to write (if any)" return bullet;
+  `Guardrails`' Read-only line gained a one-clause carve-out clarifying it means filesystem
+  writes, not the caller's own nelly write-back call.
+- `agents/spec-reviewer.md`: first-ever agent-nelly integration — uses a caller-passed brief
+  for the source material's touched area, mirroring `workflow-manager`'s Availability Check
+  phrasing.
+- `agents/tdd-planner.md`: one clarifying sentence — this feature doesn't alter its existing
+  direct-read judgment call from 0.1.3.
+- `skills/design-author/SKILL.md`: makes the pre-sweep nelly call and the follow-up write-back
+  call on `planning-agent`'s behalf (subagents can't spawn subagents in this harness); new
+  Design Gate bullet blocking on an unresolved Security Finding.
+- `skills/requirements-agent/SKILL.md`: makes the pre-delegation nelly call on
+  `spec-reviewer`'s behalf.
+- `references/artifact-templates.md`: new `design.md` section "Improvement Opportunities &
+  Blast Radius" (Blast Radius / Security Findings (blocking) / Refactor & Reduction
+  Opportunities (non-blocking) / Best-Practice Notes (non-blocking)); `recap.md`'s Open Items
+  gained `Security`/`Improvement` tags.
+
 ## 0.1.3
 
 ### Changed

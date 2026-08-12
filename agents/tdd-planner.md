@@ -21,6 +21,8 @@ section doesn't pin the boundary down concretely enough to slice against. Readin
 files directly is not a nelly-routing violation — they are this feature's own approved
 artifacts, not a substitute for a memory brief, and `design.md`'s `Research Basis` already
 carries the brief pointer from when `design-author` called `agent-nelly:nelly-orchestrator`.
+The Planning Subagents Agent-Nelly Integration feature extends `planning-agent`'s and
+`spec-reviewer`'s nelly integration without overriding or reopening this judgment call.
 
 ## Task slicing rules
 

@@ -28,7 +28,13 @@ context:
 2. `planning-agent` — wide-fast then deep-focused codebase research for the actual touchpoints,
    interfaces, and constraints this design must respect. Record its findings in the `Research
    Basis` section of `design.md` (see `references/artifact-templates.md`) so a later reader can
-   see the design is grounded, not guessed.
+   see the design is grounded, not guessed. Before delegating, make the pre-sweep
+   `agent-nelly:nelly-orchestrator` call for candidate file/module hits (`target files` plus
+   `surface relevant memory` set), when available per the Availability Check, and pass those
+   hits down to `planning-agent` alongside the brief. After `planning-agent` returns, take its
+   "Nelly summaries to write (if any)" output and persist it via
+   `agent-nelly:nelly-orchestrator`'s `new fact`/`new facts` input — `planning-agent` itself
+   never writes it.
 
 ## Design Gate
 
@@ -42,6 +48,7 @@ Move forward only when all of the following are true:
 - no unresolved contradiction remains
 - when `agent-nelly:nelly-orchestrator` is available, its Intent-alignment check for this
   design is clean, or its flag has been surfaced to and resolved with the user
+- no unresolved Security Finding remains unconfirmed by the user
 
 If any of the above are weak or missing: stop, return a partial design draft, list the open
 questions or contradictions, ask the next smallest clarifying question.
@@ -67,6 +74,9 @@ durable record — `design.md` stays the artifact of record.
 - states, flows, and edge-case handling
 - validation strategy
 - risks and tradeoffs
+- the `Improvement Opportunities & Blast Radius` section (`Blast Radius`, `Security Findings
+  (blocking)`, `Refactor & Reduction Opportunities (non-blocking)`, `Best-Practice Notes
+  (non-blocking)`)
 - the explicit `Phase Completion` checklist status
 - open questions
 - phase status: `blocked` or `approved`
@@ -82,6 +92,8 @@ When writing or updating `design.md`, use the canonical template from
 - Do not name a touchpoint or interface that `planning-agent` didn't actually surface or that
   wasn't otherwise verified — a design grounded in a guess is exactly the failure mode this
   research step exists to prevent.
+- Never fold a security-relevant finding into the general (non-blocking) subsections silently —
+  it always routes to `Security Findings` and triggers the Design Gate pause.
 - Prefer the smallest coherent design that supports the current requirement slice.
 - Do not render a diagram for a design simple enough to state in a sentence or two — `show_widget`
   is for when a picture removes real ambiguity, not decoration.

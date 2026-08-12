@@ -35,8 +35,11 @@ draft.
    identify ambiguity, hidden assumptions, weak success criteria, weak testability.
 2. For source material substantial enough to warrant an isolated pass (a full PRD, a long
    ticket thread), delegate the assessment to the `spec-reviewer` subagent — it returns gaps and
-   rewritten EARS sections without spending this thread's context on the raw source. For a short
-   draft, do the assessment inline.
+   rewritten EARS sections without spending this thread's context on the raw source. Before
+   delegating, call `agent-nelly:nelly-orchestrator` for a brief on the source material's
+   touched area (when available, per the Availability Check), and pass that brief down to
+   `spec-reviewer` the same way `design-author` passes a brief down to `planning-agent`. For a
+   short draft, do the assessment inline.
 3. Rewrite only the weak sections into EARS-based format — never flatten nuanced constraints
    into generic language.
 4. Present the changed draft, pause for user confirmation or edits.

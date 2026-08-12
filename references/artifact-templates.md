@@ -208,6 +208,24 @@ the calling skill (not `ux-agent` — see `references/ux-conventions.md`).
 - Risk: <risk>
   - Mitigation: <mitigation>
 
+## Improvement Opportunities & Blast Radius
+
+### Blast Radius
+
+<Prose: touched area(s), who/what is affected, ripple effects of this design.>
+
+### Security Findings (blocking)
+
+- [ ] Finding: <text> / Pause Reason: <text> / Resolution: <pending | resolved and how>
+
+### Refactor & Reduction Opportunities (non-blocking)
+
+- [ ] <opportunity>
+
+### Best-Practice Notes (non-blocking)
+
+- [ ] <note>
+
 ## Open Questions
 
 - [ ] <question>
@@ -217,6 +235,7 @@ the calling skill (not `ux-agent` — see `references/ux-conventions.md`).
 - [ ] Design supports current requirements
 - [ ] Design is testable
 - [ ] Design avoids unresolved contradictions
+- [ ] No unresolved Security Finding remains
 - [ ] Ready to move to Tasks
 
 ## Phase Completion
@@ -337,6 +356,8 @@ Repeat the same structure for each phase.
 - [ ] Question: <text>
 - [ ] Debt: <text>
 - [ ] Risk: <text>
+- [ ] Security: <text>
+- [ ] Improvement: <text>
 
 ## Decisions Made
 
