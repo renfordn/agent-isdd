@@ -74,6 +74,23 @@ silently continue past a stated drift. If unavailable, skip this step entirely �
 plain notice and continue the workflow without a memory brief; this is never a blocking
 condition.
 
+This skill is the single fetch point for a nelly brief per continuous stretch of phase work:
+when a brief has already been fetched this session and is still visible in context, reuse it
+rather than re-calling `agent-nelly:nelly-orchestrator` again for the next phase step. Re-fetch
+only when one of these triggers applies:
+
+1. No prior brief is visible in context (a new session, or context was compacted since the last
+   fetch).
+2. A rewind (Rewind Contract) or a Mid-Phase Change Classification happened since the cached
+   brief was fetched — both live in `workflow-manager`'s `SKILL.md`.
+3. `workflow-manager`'s `before-continue` Intent-alignment check flagged a divergence since the
+   cached brief was fetched.
+
+When delegating into `workflow-manager` or `design-author`, pass along the already-fetched brief
+explicitly rather than letting either re-derive or re-fetch it on their own. `workflow-manager`'s
+own `start`-time Goal-seeding call and `before-continue`'s Intent-alignment call are distinct-
+purpose, always-fresh calls outside this dedup pool — see its Goal Field Contract section.
+
 ## Start Protocol
 
 1. Use `workflow-manager` to identify or derive the feature title and slug, and to scaffold or

@@ -82,3 +82,10 @@ agent-isdd still owns writing its own per-feature `spec/` artifacts
 (`workflow-state.md`/`.json`, `requirements.md`, `design.md`, `tasks.md`, `recap.md`) under
 `~/.claude/sdd-memory/<project-slug>/spec/<feature-slug>/` directly — that scaffolding
 (`hooks/sdd_memory.py`) is not part of what `agent-nelly` owns.
+
+Within a continuous stretch of phase work, agent-isdd does not re-call
+`agent-nelly:nelly-orchestrator` on every step once a brief has already been fetched and is
+still visible in context — it reuses the in-session brief instead. The full re-fetch-trigger
+convention lives in `skills/spec-driven-development/SKILL.md`'s Goal-Aware Memory section (this
+is a documentation pointer, not a duplicate definition). `workflow-state.json` is intentionally
+unchanged by this dedup convention — it carries no brief-caching field.

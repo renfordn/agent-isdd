@@ -16,11 +16,15 @@ migration notes needing implementation-facing design.
 Before drafting, delegate to two subagents rather than relying only on what's already in
 context:
 
-1. `agent-nelly:nelly-orchestrator` — if available (per `workflow-manager`'s Availability
-   Check), a holistic brief (Intent, prior decisions, open risks, relevant past entries,
-   Intent-alignment check). Seed `planning-agent` with it so it isn't re-deriving project
-   context the memory already has. If unavailable, skip this step and proceed without a brief,
-   per the Availability Check's graceful-degradation rule.
+1. `agent-nelly:nelly-orchestrator` — reuse the brief the caller passed down when it has already
+   been fetched this session; call `agent-nelly:nelly-orchestrator` directly only when
+   `design-author` is invoked standalone with no prior brief in context, or the passed-down
+   brief predates a Requirements/Design change. When a fresh call is made (per either of those
+   conditions), it returns a holistic brief (Intent, prior decisions, open risks, relevant past
+   entries, Intent-alignment check). Seed `planning-agent` with it (whether reused or freshly
+   fetched) so it isn't re-deriving project context the memory already has. If unavailable
+   (per the Availability Check) and no prior brief was passed down, skip this step and proceed
+   without a brief, per the Availability Check's graceful-degradation rule.
 2. `planning-agent` — wide-fast then deep-focused codebase research for the actual touchpoints,
    interfaces, and constraints this design must respect. Record its findings in the `Research
    Basis` section of `design.md` (see `references/artifact-templates.md`) so a later reader can

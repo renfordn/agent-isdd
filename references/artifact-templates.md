@@ -139,7 +139,6 @@ Use `workflow-state.md` as a compact machine-readable summary for the workflow.
 ## Phase Completion
 
 - [ ] All required requirement sections are populated
-- [ ] Approval Checkpoint is fully satisfied
 - [ ] Open Gaps contains no blocking unresolved item
 - [ ] State can be marked `Approved`
 ```
@@ -226,7 +225,6 @@ the calling skill (not `ux-agent` — see `references/ux-conventions.md`).
 - [ ] Architecture or code touchpoints are named
 - [ ] Interfaces or contracts are described
 - [ ] Validation strategy is credible
-- [ ] Phase Decision is fully satisfied
 - [ ] State can be marked `Approved`
 ```
 
@@ -334,17 +332,11 @@ Repeat the same structure for each phase.
 - [ ] Tasks
 - [ ] Implementation
 
-## Open Questions
+## Open Items
 
-- [ ] <question>
-
-## Technical Debt
-
-- [ ] <debt item>
-
-## Risks
-
-- [ ] <risk>
+- [ ] Question: <text>
+- [ ] Debt: <text>
+- [ ] Risk: <text>
 
 ## Decisions Made
 

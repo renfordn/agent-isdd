@@ -17,7 +17,10 @@ Requirements are approved and Design is coherent. The caller passes the feature 
 `design/design.md` first —
 `design.md`'s `Research Basis` section (populated by `planning-agent` during Design) should
 already tell you which files a task touches; only invoke `planning-agent` yourself if that
-section doesn't pin the boundary down concretely enough to slice against.
+section doesn't pin the boundary down concretely enough to slice against. Reading these two
+files directly is not a nelly-routing violation — they are this feature's own approved
+artifacts, not a substitute for a memory brief, and `design.md`'s `Research Basis` already
+carries the brief pointer from when `design-author` called `agent-nelly:nelly-orchestrator`.
 
 ## Task slicing rules
 

@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.1.3
+
+### Changed
+- Token-efficiency pass on the agent-isdd ↔ agent-nelly integration and on agent-isdd's own
+  spec artifacts.
+- `skills/spec-driven-development/SKILL.md`: declared as the single fetch point for
+  `agent-nelly:nelly-orchestrator`'s holistic brief per continuous stretch of phase work, with
+  three explicit re-fetch triggers (no prior brief in context, a rewind/Mid-Phase Change
+  Classification since, an Intent-alignment divergence flagged since).
+- `skills/design-author/SKILL.md`: reuses the brief passed down by the caller instead of
+  always re-fetching.
+- `skills/workflow-manager/SKILL.md`: documents its `start`/`before-continue` nelly calls as
+  distinct-purpose and explicitly outside the new dedup pool.
+- `agents/tdd-planner.md`: documents why its direct `requirements.md`/`design.md` reads are
+  not a nelly-routing violation.
+- `INTEROP.md`: records the brief-reuse convention as the cross-plugin-visible contract.
+- `references/artifact-templates.md`: removed two redundant `Phase Completion` re-check
+  lines (`requirements.md`, `design.md`) and consolidated `recap.md`'s `Open Questions` /
+  `Technical Debt` / `Risks` sections into one `Open Items` section (368→360 lines).
+
 ## 0.1.2
 
 ### Added

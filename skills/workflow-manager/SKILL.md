@@ -63,6 +63,10 @@ entirely and resolution starts from `workflow-state.md`.
   agent-nelly's Intent is a project-level alignment signal, not a per-feature value to
   repair `workflow-state.md` against on every disagreement; only an explicit divergence flag
   from the alignment check is pause-worthy, per the paragraph above.
+- These two calls — `start`-time Goal-seeding and `before-continue`'s Intent-alignment check —
+  are distinct-purpose, always-fresh calls to `agent-nelly:nelly-orchestrator`, explicitly
+  outside the in-session brief-reuse dedup pool described in `spec-driven-development`'s
+  Goal-Aware Memory section; neither is ever satisfied by reusing a cached brief.
 
 ### Availability Check
 
