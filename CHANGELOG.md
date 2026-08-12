@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1
+
+### Infra
+- First public push: repo created at `github.com/renfordn/agent-isdd`. No functional changes
+  since 0.1.0.
+
 ## 0.1.0
 
 ### Added
