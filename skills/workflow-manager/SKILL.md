@@ -1,6 +1,6 @@
 ---
 name: workflow-manager
-description: "[Internal — use /isdd instead] Resolve workflow state deterministically, decide start or continue behavior, repair stale state, scaffold per-feature artifacts, and control phase transitions through Requirements/Design/Tasks and the handoff to implementation."
+description: "[Internal — use /isdd instead] Resolves workflow state, decides start/continue, repairs stale state, scaffolds artifacts, and controls phase transitions through Requirements/Design/Tasks/handoff."
 ---
 
 # Workflow Manager

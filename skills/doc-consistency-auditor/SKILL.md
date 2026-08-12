@@ -1,6 +1,6 @@
 ---
 name: doc-consistency-auditor
-description: "[Internal — invoked automatically by hooks/commit_audit_gate.py, or directly on request] Scans skills/, agents/, commands/, hooks/ for duplicated/contradictory responsibility claims, near-verbatim duplicated prose, unverifiable \"confirmed\" claims, and dangling agent/skill references — reusing code-reviewer's Evidence Tier Model and Decision Model, auto-fixing high-confidence findings, and recording a project-level audit marker the pre-commit gate reads."
+description: "[Internal — invoked automatically by hooks/commit_audit_gate.py, or on request] Audits skills/, agents/, commands/, hooks/ for duplicated or contradictory claims and dangling references, auto-fixing high-confidence findings."
 ---
 
 # Doc Consistency Auditor

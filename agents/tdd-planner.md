@@ -1,6 +1,6 @@
 ---
 name: tdd-planner
-description: Convert approved requirements and a coherent design into phased, TDD-sized tasks and write tasks.md. Delegate to this agent once Requirements are approved and Design is coherent enough to plan implementation. It writes the tasks artifact and returns a readiness verdict; it does not implement code and cannot ask the user questions.
+description: Converts approved requirements and design into phased, TDD-sized tasks.md. Delegate once Requirements are approved and Design is coherent. Writes the artifact and returns a readiness verdict — does not implement code or ask the user questions.
 tools: Read, Grep, Glob, Write, Edit
 model: sonnet
 ---

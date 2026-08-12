@@ -1,6 +1,6 @@
 ---
 name: requirements-agent
-description: "[Internal — use /isdd instead] Produce EARS-based requirements.md under a hard completion gate, whether starting from a vague idea (interview) or an existing ticket/PRD/draft (review-and-rewrite) — the same gate, two entry modes."
+description: "[Internal — use /isdd instead] Produces EARS-based requirements.md under a hard completion gate — interview mode from scratch, or review-and-rewrite from an existing ticket/PRD."
 ---
 
 # Requirements Agent

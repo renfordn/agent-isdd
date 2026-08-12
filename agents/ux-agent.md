@@ -1,6 +1,6 @@
 ---
 name: ux-agent
-description: Owns the plugin's visible progress UI — the top-level breadcrumb, the spec-canvas/review-dashboard Artifacts, session chapter markers, and out-of-scope task chips — so every skill gets consistent rendering without re-deriving the rules itself. Delegate to this agent at every phase transition instead of calling Artifact/mark_chapter/spawn_task directly. Does NOT own the TaskCreate/TaskUpdate/TaskList checklist — the calling skill drives that directly (see references/ux-conventions.md).
+description: Renders the plugin's visible progress UI — breadcrumb, spec-canvas Artifacts, chapter markers, task chips. Delegate at every phase transition instead of calling Artifact/mark_chapter directly. Does not own the TaskCreate/TaskUpdate/TaskList checklist.
 tools: Read, Artifact, mcp__ccd_session__mark_chapter, mcp__ccd_session__spawn_task, mcp__ccd_session__dismiss_task
 model: haiku
 ---

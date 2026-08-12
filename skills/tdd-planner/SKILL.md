@@ -1,6 +1,6 @@
 ---
 name: tdd-planner
-description: "[Internal — use /isdd instead] Convert approved requirements and design into phased tasks optimized for safe TDD execution and agent handoff, grounded in planning-agent's codebase research."
+description: "[Internal — use /isdd instead] Converts approved requirements+design into phased TDD tasks.md, grounded in planning-agent's research."
 ---
 
 # TDD Planner
