@@ -174,20 +174,26 @@ UX across siblings" benefit is only realized for `agent-isdd` itself.
 
 ## Open Questions
 
-- [ ] Do `agent-tdd` and `code-reviewer` maintainers actually want this extraction, or is
+- [x] Do `agent-tdd` and `code-reviewer` maintainers actually want this extraction, or is
       per-plugin duplication acceptable to them given a smaller rendering surface than
-      `agent-isdd`'s? Unresolved from this repo alone.
+      `agent-isdd`'s? **Reclassified, not resolved**: this is not answerable from this repo, so
+      it is handed off as a follow-up item for `agent-tdd`/`code-reviewer`'s own maintainers to
+      pick up in their own repos — tracked in tasks.md's "Follow-Up For Sibling Plugins" section
+      and as a caveat in `agent-ux/INTEROP.md` (Phase 2, step 3). It no longer blocks this
+      design or its tasks.
 - [ ] Should `agent-ux`'s event contract be explicitly semver'd so three independent plugin
       repos can pin against breaking schema changes, rather than assuming lockstep upgrades?
+      Resolved procedurally in tasks.md Phase 2, step 4 (decide-or-explicitly-defer), not here.
 
 ## Phase Decision
 
-- [ ] Design supports current requirements
-- [ ] Design is testable
-- [ ] Design avoids unresolved contradictions
-- [ ] No unresolved Security Finding remains
-- [ ] Ready to move to Tasks — blocked on the two Open Questions above, which need external
-      (agent-tdd / code-reviewer maintainer) input, not just agent-isdd-side decisions.
+- [x] Design supports current requirements
+- [x] Design is testable
+- [x] Design avoids unresolved contradictions
+- [x] No unresolved Security Finding remains
+- [x] Ready to move to Tasks — the sibling-adoption question is reclassified as an external
+      follow-up (see Open Questions above) rather than a blocker; the semver question is
+      deferred procedurally into Tasks Phase 2 rather than left open here.
 
 ## Phase Completion
 

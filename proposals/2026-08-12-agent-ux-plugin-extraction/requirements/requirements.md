@@ -104,8 +104,10 @@ weight across plugins and risking visual/behavioral drift between them.
       or stay excluded as they are today ("never on a TDD stage boundary") — this guardrail was
       written from `agent-isdd`'s vantage point and needs an explicit decision now that
       `agent-tdd` would be a direct caller.
-- [ ] Whether `agent-tdd`/`code-reviewer` maintainers actually want this extraction versus
-      accepting per-plugin duplication — unresolved, outside this repo's authority.
+- [x] Whether `agent-tdd`/`code-reviewer` maintainers actually want this extraction versus
+      accepting per-plugin duplication — outside this repo's authority to resolve, so it is
+      carried forward as a follow-up item for those maintainers, not as a gap blocking this
+      plan (see design.md's Open Questions and tasks.md's "Follow-Up For Sibling Plugins").
 
 ## Approval Checkpoint
 
