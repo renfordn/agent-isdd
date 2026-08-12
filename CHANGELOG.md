@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.5
+
+### Fixed
+- `skills/spec-driven-development/SKILL.md`: Design Gate summary now mirrors
+  `design-author/SKILL.md`'s "no unresolved Security Finding remains" bullet, added in 0.1.4,
+  which had drifted out of sync between the two files (code-review finding).
+
 ## 0.1.4
 
 ### Added

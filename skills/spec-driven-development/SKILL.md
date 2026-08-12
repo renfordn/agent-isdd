@@ -218,8 +218,8 @@ resolved. When auto-advancing: update `workflow-state.md`, `recap.md`, the phase
 
 Ready to advance into `Tasks` only when: it maps clearly to approved requirements, touched
 modules/interfaces/boundaries are explicit (grounded in `planning-agent`'s findings, not
-guessed), validation strategy is credible, tradeoffs and edge-case handling are documented, and
-no unresolved contradiction remains.
+guessed), validation strategy is credible, tradeoffs and edge-case handling are documented, no
+unresolved contradiction remains, and no unresolved Security Finding remains.
 
 ## Native Plan Mode
 
