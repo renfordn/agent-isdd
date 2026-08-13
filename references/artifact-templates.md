@@ -112,6 +112,13 @@ Use `workflow-state.md` as a compact machine-readable summary for the workflow.
 - [ ] <Observable success criterion 1>
 - [ ] <Observable success criterion 2>
 
+## Non-Functional Constraints
+
+- Throughput: <concrete value/range, or `N/A: <one-line reason>`>
+- Data Volume: <concrete value/range, or `N/A: <one-line reason>`>
+- Concurrency: <concrete value/range, or `N/A: <one-line reason>`>
+- Latency Budget: <concrete value/range, or `N/A: <one-line reason>`>
+
 ## EARS Requirements
 
 - `Ubiquitous`: When <trigger>, the <system> shall <response>.
@@ -133,6 +140,7 @@ Use `workflow-state.md` as a compact machine-readable summary for the workflow.
 - [ ] Dependencies are clear
 - [ ] Edge cases are clear
 - [ ] Success criteria are clear
+- [ ] Non-Functional Constraints are populated (value or explicit N/A)
 - [ ] EARS requirements are present
 - [ ] No unresolved ambiguity remains
 
@@ -283,6 +291,13 @@ the calling skill (not `ux-agent` — see `references/ux-conventions.md`).
 ### Prerequisites
 
 - <dependency or prior decision>
+
+### Depends On
+
+- <task-id, ...> — bare task ids only, no embedded prose; empty list `[]` when this task has no
+  task-level dependency. References other task ids in this same `tasks.md`. A genuinely
+  narrative dependency (a product/architecture decision, not another task) stays in
+  `Prerequisites` instead — the two fields are not merged.
 
 ### Ordered Steps
 

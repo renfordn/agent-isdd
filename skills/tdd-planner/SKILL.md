@@ -16,7 +16,10 @@ Delegate to `planning-agent` (seeded with `design.md`'s existing `Research Basis
 repeating work `design-author` already did) whenever the design didn't already pin down exactly
 which files a task touches — slicing against a guessed file boundary is how oversized or
 wrongly-scoped tasks happen. If `design.md`'s research is already concrete enough, skip
-re-research and slice directly from it.
+re-research and slice directly from it. Before delegating, also check whether a still-valid
+`planning-agent` finding for the same touchpoints was already fetched earlier in this same
+continuous stretch of phase work (per `spec-driven-development`'s extended brief-reuse
+convention and its three re-fetch triggers) and reuse it instead of re-delegating.
 
 ## Phase Model
 
@@ -30,8 +33,10 @@ large: propose a smaller slice, ask for confirmation, continue only after confir
 
 ## Required Task Output
 
-For each phase: phase objective, Risk Tier, ordered tasks, test intent, validation target,
-dependency notes, what the phase enables next, task readiness checklist status.
+For each phase: phase objective, Risk Tier, ordered tasks, test intent, validation target, a
+structured `Depends On` task-id list (see `references/artifact-templates.md`; bare ids only, no
+prose — a narrative dependency stays in `Prerequisites`), what the phase enables next, task
+readiness checklist status.
 
 ## Risk Tier Assignment
 

@@ -39,7 +39,9 @@ Write `<sdd-memory-dir>/spec/<date-slug>/tasks/tasks.md` using the canonical `ta
 `references/artifact-templates.md` if needed). Optimize for agent handoff, not prose:
 
 For each phase include: phase objective, Risk Tier, ordered tasks, test intent, validation
-target, dependency notes, what the phase enables next, and the task-readiness checklist status.
+target, a structured `Depends On` task-id list (see `references/artifact-templates.md`; bare ids
+only, no prose — a narrative dependency stays in `Prerequisites` instead), what the phase enables
+next, and the task-readiness checklist status.
 Use direct execution language, observable validation steps, and no vague "investigate more"
 placeholders unless paired with a concrete question or exit condition.
 

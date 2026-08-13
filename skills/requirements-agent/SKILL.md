@@ -22,6 +22,9 @@ Interview rules:
   constraint is hard or a preference). This is the part of the interview that actually renders
   as clickable UI instead of a wall of text — use it whenever the question shape allows it,
   reserve free-text prompts for questions that are genuinely open-ended.
+- Ask one closed-set-friendly question eliciting Non-Functional Constraints (Throughput, Data
+  Volume, Concurrency, Latency Budget) — accept an explicit `N/A: <reason>` per key as a
+  complete answer; never leave a key blank.
 - If the user gives partial answers, update the draft and continue only on unresolved gaps.
 - Do not move into Design while any required field is weak, vague, or missing.
 
@@ -48,7 +51,8 @@ draft.
 ## Required Requirement Fields (both modes)
 
 Problem statement, user outcome, constraints, non-goals, edge cases, success criteria,
-dependencies — all expressed in EARS ruleset format where applicable.
+dependencies, non-functional constraints (value or explicit `N/A: <reason>` per key) — all
+expressed in EARS ruleset format where applicable.
 
 ## Live Spec Canvas
 

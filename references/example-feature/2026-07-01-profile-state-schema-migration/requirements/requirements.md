@@ -53,6 +53,17 @@ Persisted profile state currently uses a schema that cannot represent the new no
 - [x] Migration runs once per payload version and does not reapply unnecessarily.
 - [x] Rollout notes clearly document compatibility and rollback behavior.
 
+## Non-Functional Constraints
+
+- Throughput: N/A: client-side, one-time-per-payload migration, not a throughput-bound batch or
+  server operation.
+- Data Volume: Single user's persisted profile payload, typically <10KB; no bulk/cross-user
+  migration in scope.
+- Concurrency: N/A: runs synchronously on the single app-startup hydration path; no concurrent
+  migration paths to coordinate.
+- Latency Budget: Migration must add no perceptible delay to app startup — target <50ms for a
+  typical payload.
+
 ## EARS Requirements
 
 - `Event-driven`: When the app loads persisted profile state in v1 format, the system shall migrate it to the v2 schema before downstream consumers read it.
@@ -74,6 +85,7 @@ Persisted profile state currently uses a schema that cannot represent the new no
 - [x] Dependencies are clear
 - [x] Edge cases are clear
 - [x] Success criteria are clear
+- [x] Non-Functional Constraints are populated (value or explicit N/A)
 - [x] EARS requirements are present
 - [x] No unresolved ambiguity remains
 

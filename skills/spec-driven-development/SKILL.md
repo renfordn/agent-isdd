@@ -74,22 +74,38 @@ silently continue past a stated drift. If unavailable, skip this step entirely �
 plain notice and continue the workflow without a memory brief; this is never a blocking
 condition.
 
-This skill is the single fetch point for a nelly brief per continuous stretch of phase work:
-when a brief has already been fetched this session and is still visible in context, reuse it
-rather than re-calling `agent-nelly:nelly-orchestrator` again for the next phase step. Re-fetch
-only when one of these triggers applies:
+This skill is the single fetch/delegation point, per continuous stretch of phase work, for the
+nelly brief **and** for `planning-agent`/`spec-reviewer` findings still valid from earlier in
+that same stretch (e.g. a `planning-agent` finding produced during Design that `tdd-planner`
+would otherwise re-request during Tasks). When a brief or finding has already been fetched this
+session and is still visible in context, reuse it rather than re-calling
+`agent-nelly:nelly-orchestrator`/`planning-agent`/`spec-reviewer` again for the same content.
+Re-fetch only when one of these triggers applies — identical rule, same three triggers, now
+scoped to a wider set of cached content, not a new or looser rule:
 
-1. No prior brief is visible in context (a new session, or context was compacted since the last
-   fetch).
+1. No prior brief or finding is visible in context (a new session, or context was compacted
+   since the last fetch). Applies identically to a `planning-agent`/`spec-reviewer` finding: if
+   it isn't visible, it isn't reusable.
 2. A rewind (Rewind Contract) or a Mid-Phase Change Classification happened since the cached
-   brief was fetched — both live in `workflow-manager`'s `SKILL.md`.
+   brief/finding was fetched — both live in `workflow-manager`'s `SKILL.md`. A rewind or
+   mid-phase change can invalidate a cached codebase finding exactly as it can invalidate a
+   brief, since either can change what "the current design/task" even means.
 3. `workflow-manager`'s `before-continue` Intent-alignment check flagged a divergence since the
-   cached brief was fetched.
+   cached brief/finding was fetched. When this fires, treat every cached item (brief and any
+   `planning-agent`/`spec-reviewer` finding alike) as invalidated, not only the brief — an
+   Intent-level divergence is a signal about the whole stretch of work, not brief-specific.
 
-When delegating into `workflow-manager` or `design-author`, pass along the already-fetched brief
-explicitly rather than letting either re-derive or re-fetch it on their own. `workflow-manager`'s
-own `start`-time Goal-seeding call and `before-continue`'s Intent-alignment call are distinct-
-purpose, always-fresh calls outside this dedup pool — see its Goal Field Contract section.
+None of the three triggers assumed brief-specific semantics that fail to hold for a
+`planning-agent`/`spec-reviewer` finding — re-verified as part of extending this rule's scope,
+per design.md's mitigation for the correctness risk this generalization raises.
+
+When delegating into `workflow-manager`, `design-author`, or `tdd-planner`, pass along the
+already-fetched brief and any still-valid finding explicitly rather than letting any of them
+re-derive or re-fetch on their own; `design-author` and `tdd-planner` check for a still-valid
+cached finding before re-delegating to `planning-agent`, mirroring how they already check for a
+reusable agent-nelly brief. `workflow-manager`'s own `start`-time Goal-seeding call and
+`before-continue`'s Intent-alignment call are distinct-purpose, always-fresh calls outside this
+dedup pool — see its Goal Field Contract section.
 
 ## Start Protocol
 

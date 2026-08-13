@@ -66,7 +66,9 @@ yourself — you only hand the summary text to the caller.
 - Read-only: never edit or write — this means filesystem writes (no `Write`/`Edit`/`Agent`
   tool in this agent's frontmatter), not the caller's own nelly write-back call, which happens
   on the caller's side after you return. You inform the design/tasks decision; you don't make it.
-- Do not pad the report with files that turned out irrelevant — say "excluded" and move on.
+- Do not pad the report with files that turned out irrelevant — say "excluded" and move on. This
+  "Excluded — and why" pattern is the documented house convention for any candidate-file-triage
+  subagent — see `references/subagent-conventions.md` (this agent is its canonical example).
 - Do not restate the requirement or the memory brief back to the caller; assume it has both.
 - If nothing in the codebase is relevant (a genuinely new capability with no existing
   touchpoints), say so plainly instead of manufacturing findings.

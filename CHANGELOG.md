@@ -1,5 +1,44 @@
 # Changelog
 
+## 0.1.6
+
+### Added
+- Cross-cutting token-efficiency pass across the planning workflow (savings come from structure
+  and reuse, not from cutting content — no `Phase Completion`/`Approval Checkpoint`/`Task
+  Readiness Checklist` item shrank).
+- `references/artifact-templates.md`: `requirements.md` template gains a fixed four-key
+  `## Non-Functional Constraints` section (Throughput, Data Volume, Concurrency, Latency
+  Budget; each accepts `N/A: <reason>`) plus its Approval Checkpoint line; `tasks.md` template
+  gains a structured `### Depends On` (bare `task-id` list) field per phase, alongside and
+  distinct from the existing narrative `### Prerequisites` (381→396 lines).
+- `skills/requirements-agent/SKILL.md`: interview mode now elicits Non-Functional Constraints as
+  one closed-set-friendly question; `Required Requirement Fields` lists the new field.
+- `skills/tdd-planner/SKILL.md` / `agents/tdd-planner.md`: replaced the informal "dependency
+  notes" mention with a pointer to the structured `Depends On` field.
+- `INTEROP.md`: confirms `Depends On` is intentionally excluded from the `agent-tdd` Slice Spec
+  field mapping (single-slice handoff; phase ordering already carries the sequencing signal).
+- `skills/workflow-manager/SKILL.md`: new "Recap-and-Drop" rule — once a phase's completion
+  checklist passes, subsequent same-session prompts reference `recap.md`'s summary by default
+  instead of re-quoting the full prior-phase artifact body; the full artifact stays on disk and
+  remains re-readable on demand. Cross-checked `spec-driven-development`/`design-author`/
+  `tdd-planner` for callsites that needed updating — none did.
+- `skills/spec-driven-development/SKILL.md`: the existing three-trigger brief-reuse convention
+  (no prior content in context / a rewind or Mid-Phase Change Classification since / an
+  Intent-alignment divergence flagged since) now also covers still-valid `planning-agent`/
+  `spec-reviewer` findings within the same continuous stretch of phase work, not only the
+  agent-nelly brief — same triggers, re-verified against the finding-cache scenario rather than
+  loosened, per the correctness-risk mitigation in this pass's design. `design-author`/
+  `tdd-planner` now check for a reusable cached finding before re-delegating to `planning-agent`,
+  which is the single largest expected runtime saving in this pass (skips a full `planning-agent`
+  re-invocation when Design already produced the needed finding).
+- New `references/subagent-conventions.md`: documents "Excluded — and why" as the house
+  convention for any subagent performing candidate-file triage, citing `agents/planning-agent.md`
+  as the canonical, already-compliant example; `spec-reviewer`/`tdd-planner` noted as confirmed
+  non-applicable today. `agents/planning-agent.md` gains a one-line pointer to it.
+- `references/example-feature/2026-07-01-profile-state-schema-migration/`: worked-example
+  refresh showing the new `Non-Functional Constraints` block (`requirements.md`, 85→97 lines)
+  and a genuine `Depends On` chain across its three task phases (`tasks.md`, 143→155 lines).
+
 ## 0.1.5
 
 ### Fixed

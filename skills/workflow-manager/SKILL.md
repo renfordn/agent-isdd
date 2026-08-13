@@ -204,6 +204,24 @@ the decision is `handoff`, additionally rely on `hooks/slice_spec_gate.py` — i
 `agent-tdd` spawn itself if the constructed Slice Spec is missing a required field, so this
 hook does not need to re-verify Slice Spec completeness by hand.
 
+## Recap-and-Drop
+
+Once a phase's completion checklist passes (the `after-requirements`, `after-design`,
+`after-tasks` hooks), summarize the phase into `recap.md`; for the remainder of the session,
+subsequent prompts reference that `recap.md` summary by default rather than re-quoting the full
+prior-phase artifact body. The one explicit exception: the full artifact stays on disk under the
+feature's `spec/` folder and remains re-readable on demand at any time — this rule governs
+default prompt construction only, never access. `recap.md`'s `Open Items` section still carries
+every unresolved question/debt/risk/security/improvement flag forward in full; summarizing never
+means silently dropping an open item.
+
+Cross-checked against `spec-driven-development/SKILL.md`, `design-author/SKILL.md`, and
+`tdd-planner/SKILL.md`/`agents/tdd-planner.md`: none of them currently re-quote a full
+prior-phase artifact into a prompt by default. `agents/tdd-planner.md` reads
+`requirements.md`/`design.md` directly, but that is a one-time file read inside its own isolated
+subagent context to ground its own output, not the orchestrator re-pasting a full artifact into
+a prompt — no callsite needed changing.
+
 ## Start Rules
 
 Choose `start` when no matching feature folder exists, the user explicitly asks to start a new

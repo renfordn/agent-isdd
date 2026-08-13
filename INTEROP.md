@@ -28,6 +28,11 @@ Field mapping (agent-isdd's artifact field → agent-tdd's expected Slice Spec f
 | `agent-nelly` pre-slice brief, if available | Pre-Slice Brief |
 | (not set — default) | Review handoff mode (agent-tdd defaults to "pause for caller-driven review") |
 
+`tasks.md`'s per-task `Depends On` field is deliberately not part of this mapping: the handoff
+spawns one Slice Spec (one task/phase) at a time, and phase ordering already carries the
+sequencing signal, so there is no cross-task ordering for `agent-tdd` to resolve on its side —
+assessed and decided against, not left unaddressed.
+
 This is a **one-directional handoff**: agent-isdd does not resume, monitor, or drive
 `agent-TDD` past the initial spawn. Whatever context resumes `agent-TDD` after its
 Green→Refactor review pause (via `SendMessage` to its agent id, per `agent-tdd`'s own contract)

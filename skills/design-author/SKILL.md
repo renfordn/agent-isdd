@@ -26,7 +26,10 @@ context:
    (per the Availability Check) and no prior brief was passed down, skip this step and proceed
    without a brief, per the Availability Check's graceful-degradation rule.
 2. `planning-agent` — wide-fast then deep-focused codebase research for the actual touchpoints,
-   interfaces, and constraints this design must respect. Record its findings in the `Research
+   interfaces, and constraints this design must respect. Reuse a still-valid `planning-agent`
+   finding already fetched earlier in this same continuous stretch of phase work (per
+   `spec-driven-development`'s extended brief-reuse convention and its three re-fetch triggers)
+   instead of re-delegating for the same touchpoints. Record its findings in the `Research
    Basis` section of `design.md` (see `references/artifact-templates.md`) so a later reader can
    see the design is grounded, not guessed. Before delegating, make the pre-sweep
    `agent-nelly:nelly-orchestrator` call for candidate file/module hits (`target files` plus

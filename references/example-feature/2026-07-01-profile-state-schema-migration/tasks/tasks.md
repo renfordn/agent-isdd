@@ -24,6 +24,10 @@ Detect legacy payload versions and prevent invalid persisted state from breaking
 
 - Approved requirements and design artifacts.
 
+### Depends On
+
+- []
+
 ### Ordered Steps
 
 1. Add unit tests for version detection and malformed-payload fallback behavior.
@@ -64,6 +68,10 @@ Migrate valid v1 payloads into normalized v2 state with explicit schema metadata
 
 - Phase 1 is green.
 
+### Depends On
+
+- [Phase 1]
+
 ### Ordered Steps
 
 1. Add transform mapping tests for representative v1 fixtures.
@@ -103,6 +111,10 @@ Integrate migration into startup hydration and document compatibility behavior f
 ### Prerequisites
 
 - Phase 2 is green.
+
+### Depends On
+
+- [Phase 2]
 
 ### Ordered Steps
 
