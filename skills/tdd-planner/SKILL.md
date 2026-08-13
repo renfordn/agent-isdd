@@ -40,13 +40,8 @@ readiness checklist status.
 
 ## Risk Tier Assignment
 
-Set each task's Risk Tier to `high-risk` only when `design.md`'s Risks And Tradeoffs section
-names a risk touching that task's files/module, or the task is itself a high-risk migration.
-Otherwise `standard`. This is the trigger `spec-driven-development`'s Implementation Handoff
-uses to decide whether to spawn `agent-tdd:test-author` before `agent-tdd:agent-TDD` instead of
-`agent-tdd:agent-TDD` writing the test itself (see `INTEROP.md` at the repo root) — do not mark
-a task `high-risk` speculatively; it must trace to a specific named risk or migration, not
-general caution.
+Risk Tier assignment is defined once, in `agents/tdd-planner.md`'s Risk Tier Assignment section
+— see there for the exact rule rather than restating it here.
 
 When writing or updating `tasks.md`, use the canonical template from
 `references/artifact-templates.md`.
