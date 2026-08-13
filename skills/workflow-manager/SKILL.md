@@ -54,19 +54,24 @@ entirely and resolution starts from `workflow-state.md`.
   `workflow-state.md`'s `Goal` field from it; otherwise ask the user for the feature's Goal as
   before (a feature's Goal is not always identical to its problem statement). If unavailable,
   always ask the user — there is no Intent to seed from.
-- On every `before-continue`, if available, call `agent-nelly:nelly-orchestrator` with a
-  one-line description of the current phase/task for an Intent-alignment check. If it flags a
-  divergent Intent, treat that as a pause-worthy condition (see Pause Rules) rather than
-  something to note and continue past. If unavailable, skip this check entirely — no pause, no
-  error, per the Availability Check's graceful-degradation rule.
+- On every `before-continue`, perform an Intent-alignment check **inline** — do not spawn
+  `agent-nelly:nelly-orchestrator` for this. Compare the current phase/task description against
+  the project's Intent already visible in session context: first look for the `Intent: <text>`
+  line surfaced at session start by `nelly_session_start.py`; if the session context no longer
+  carries it (post-compaction), fall back to `workflow-state.md`'s own `Goal` field, which was
+  seeded from it. If the current task clearly diverges from that Intent/Goal, treat it as a
+  pause-worthy condition (see Pause Rules) rather than something to note and continue past. If
+  no Intent is visible in context and the Goal field is absent, skip the check — same
+  graceful-degradation outcome as before, no pause, no error.
 - `workflow-state.md`'s `Goal` field is always authoritative for this feature once seeded —
-  agent-nelly's Intent is a project-level alignment signal, not a per-feature value to
-  repair `workflow-state.md` against on every disagreement; only an explicit divergence flag
-  from the alignment check is pause-worthy, per the paragraph above.
-- These two calls — `start`-time Goal-seeding and `before-continue`'s Intent-alignment check —
-  are distinct-purpose, always-fresh calls to `agent-nelly:nelly-orchestrator`, explicitly
-  outside the in-session brief-reuse dedup pool described in `spec-driven-development`'s
-  Goal-Aware Memory section; neither is ever satisfied by reusing a cached brief.
+  the project's Intent is a coarser alignment signal, not a per-feature value to repair
+  `workflow-state.md` against on every disagreement; only a clear divergence from the inline
+  alignment check is pause-worthy, per the paragraph above.
+- The `start`-time Goal-seeding call to `agent-nelly:nelly-orchestrator` remains a
+  distinct-purpose, always-fresh call explicitly outside the in-session brief-reuse dedup pool
+  described in `spec-driven-development`'s Goal-Aware Memory section; it is never satisfied by
+  reusing a cached brief. The `before-continue` alignment check no longer spawns a nelly
+  subagent — it runs inline — and is therefore not part of this pool.
 
 ### Availability Check
 
@@ -152,9 +157,9 @@ Every hook writes `Last Hook Run`, `Last Hook Outcome`, `Last Hook Decision`, `H
 
 Resolve the active feature folder, read `workflow-state.md`, check for a pending rollback
 request first (see "Rollback Request Intake" below — this takes priority over everything else
-in this hook), call `agent-nelly:nelly-orchestrator` (if available, per the Availability Check)
-for the Intent-alignment check, detect stale/contradictory artifacts, repair if safe, decide
-the next action, write the result.
+in this hook), perform the inline Intent-alignment check (see Goal Field Contract — compare
+current phase/task against the Intent in session context; no nelly spawn), detect
+stale/contradictory artifacts, repair if safe, decide the next action, write the result.
 
 **Verification Step**: before reporting this hook's decision as final, confirm `recap.md` and
 `hook_history` actually reflect it — if `state_consistency_check.py` already repaired drift for
@@ -390,8 +395,10 @@ classify the change before reacting, reusing the Rewind Contract for its only mu
 
 ## Task Tracker Sync
 
-The breadcrumb is owned by `agent-ux:ux-agent`; the `TaskCreate`/`TaskUpdate`/`TaskList`
-checklist is not — ux-agent cannot reach those from its subagent context (see
+The breadcrumb is rendered inline by the calling skill for status responses, and by
+`agent-ux:ux-agent` as part of a `phase_transition` envelope (see `spec-driven-development`'s
+Visible Progress section); the `TaskCreate`/`TaskUpdate`/`TaskList` checklist is never
+`agent-ux:ux-agent`'s job either way — it cannot reach those from its subagent context (see
 `agent-ux:ux-agent`). Call `TaskCreate`/`TaskUpdate`/`TaskList` directly, self-loaded via
 `ToolSearch` first. `hooks/phase_task_sync.py` fires a reminder on every
 `workflow-state.md`/`tasks.md` write as a backstop — on that reminder, sync the checklist
@@ -403,6 +410,7 @@ directly rather than delegating to `agent-ux:ux-agent`.
 - Do not continue into a later phase when an earlier phase is invalidated.
 - Do not hand off to implementation unless tasks are explicitly ready.
 - Do not leave `workflow-state.md` stale after a routing decision.
-- Do not skip the Goal-field capture on `start`, or the Intent-alignment check on
-  `before-continue` when `agent-nelly:nelly-orchestrator` is available.
+- Do not skip the Goal-field capture on `start` (requires nelly when available).
+- Do not skip the inline Intent-alignment check on `before-continue` — it runs regardless of
+  nelly availability (no nelly spawn needed; see Goal Field Contract).
 - Do not scaffold a second, divergent folder structure — always the one canonical layout above.

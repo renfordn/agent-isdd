@@ -16,7 +16,7 @@ class PhaseTaskSyncTests(unittest.TestCase):
         )
         self.assertEqual(rc, 0)
         self.assertIsNotNone(msg)
-        self.assertIn("ux-agent", msg)
+        self.assertIn("agent-ux:ux-agent", msg)
 
     def test_tasks_tasks_md_triggers_reminder(self):
         msg, rc = h.run_hook_message(

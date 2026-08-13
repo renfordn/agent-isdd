@@ -47,15 +47,25 @@ Do not skip forward across phases unless the current phase is complete and not b
 
 ## Visible Progress (every phase-transition or status response)
 
-Before doing anything else in a response that transitions or reports phase, delegate to
-`agent-ux:ux-agent` (via the `Agent` tool) with a `breadcrumb_only` event envelope
-(`caller: agent-isdd`, `event_type: breadcrumb_only`, `phase_state`) for the breadcrumb line. On
-an actual phase transition (Requirements → Design → Tasks → Implementation, or a
-restart/rewind), send a `phase_transition` envelope instead so it can also mark a session
-chapter — never on a status response that isn't itself a transition. Never hand-roll the
-breadcrumb text or drive `Artifact`/`mark_chapter` directly from this skill — that's
-`agent-ux:ux-agent`'s job (see `INTEROP.md`'s "→ agent-ux (UX rendering)" section for the
-envelope contract and the unavailability fallback).
+Two distinct rendering paths — use the right one based on whether a phase transition is occurring:
+
+**Phase transitions** (Requirements → Design → Tasks → Implementation, or a restart/rewind):
+delegate to `agent-ux:ux-agent` (via the `Agent` tool) with a `phase_transition` event envelope
+(`caller: agent-isdd`, `event_type: phase_transition`, `phase_state`) so it can mark a session
+chapter and update the spec-canvas Artifact. See `INTEROP.md`'s "→ agent-ux (UX rendering)"
+section for the envelope contract and the unavailability fallback. Never drive `Artifact`/
+`mark_chapter` directly from this skill — those are `agent-ux:ux-agent`'s job.
+
+**Status responses that are not a phase transition** (formerly `breadcrumb_only` delegations):
+render a progress line **inline** — no `Agent` tool call. A one-line string does not warrant a
+full subagent spawn. Format:
+
+```
+**SDD** Requirements [✓] → Design [▶] → Tasks [·] → Implementation [·]
+```
+
+Use `workflow-state.md` to determine each phase's status marker: `✓` approved/complete,
+`▶` in progress, `✗` blocked, `·` pending. Emit the line before the rest of the response.
 
 The phase `TaskCreate` checklist is different: ux-agent cannot reach `TaskCreate`/`TaskUpdate`/
 `TaskList` from its subagent context (see `agent-ux:ux-agent`). Render/refresh the checklist
@@ -104,9 +114,11 @@ When delegating into `workflow-manager`, `design-author`, or `tdd-planner`, pass
 already-fetched brief and any still-valid finding explicitly rather than letting any of them
 re-derive or re-fetch on their own; `design-author` and `tdd-planner` check for a still-valid
 cached finding before re-delegating to `planning-agent`, mirroring how they already check for a
-reusable agent-nelly brief. `workflow-manager`'s own `start`-time Goal-seeding call and
-`before-continue`'s Intent-alignment call are distinct-purpose, always-fresh calls outside this
-dedup pool — see its Goal Field Contract section.
+reusable agent-nelly brief. `workflow-manager`'s own `start`-time Goal-seeding call is a distinct-purpose, always-fresh
+call outside this dedup pool — see its Goal Field Contract section; it is never satisfied by
+reusing a cached brief. The `before-continue` Intent-alignment check no longer spawns a nelly
+subagent — it runs inline against the Intent already in session context (see
+`workflow-manager/SKILL.md`'s Goal Field Contract).
 
 ## Start Protocol
 
@@ -169,11 +181,12 @@ workflow:
   for a goal-aware brief (Intent, prior decisions, open risks, Intent-alignment check); it is
   the sole writer into agent-nelly's own memory store, which agent-isdd never reads or writes
   directly.
-- `agent-ux:ux-agent` — an external peer-plugin subagent, delegate at every phase transition (and
-  breadcrumb-only status response) for the breadcrumb, chapter markers, and any spec-canvas
-  Artifact, via the UX Event Envelope (`caller: agent-isdd`, `event_type`, `phase_state`,
-  `delta`, `artifact_path` — see `INTEROP.md`'s "→ agent-ux (UX rendering)" section). It does not
-  own the `TaskCreate` checklist — see "Task Tracker Sync" below.
+- `agent-ux:ux-agent` — an external peer-plugin subagent, delegate at every **phase transition**
+  for chapter markers and the spec-canvas Artifact, via the UX Event Envelope (`caller:
+  agent-isdd`, `event_type: phase_transition`, `phase_state`, `delta`, `artifact_path` — see
+  `INTEROP.md`'s "→ agent-ux (UX rendering)" section). Status breadcrumbs between transitions
+  are rendered inline (see "Visible Progress" above). It does not own the `TaskCreate` checklist
+  — see "Task Tracker Sync" below.
 
 Delegation rules:
 - Prefer the subagent over inlining these when the task is well-scoped.

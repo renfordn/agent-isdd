@@ -4,12 +4,13 @@ a phase or slice artifact changes.
 
 Generalizes the old tasks.md-only reminder to every phase-transition surface
 (workflow-state.md, tasks/tasks.md) now that the breadcrumb + TaskCreate/
-TaskUpdate checklist convention (see references/ux-conventions.md) applies to
-every phase and every TDD slice, not just the Tasks phase. Only the model can
-call TaskCreate/TaskUpdate/Artifact, so this hook can't perform the sync
-itself — it fires a reminder that the sync is owed. The breadcrumb is
-ux-agent's job; the TaskCreate/TaskUpdate checklist is the calling skill's own
-job (ux-agent's isolated subagent context can't reach deferred tools).
+TaskUpdate checklist convention (see agent-ux's references/ux-conventions.md,
+via INTEROP.md's "-> agent-ux (UX rendering)" section) applies to every phase
+and every TDD slice, not just the Tasks phase. Only the model can call
+TaskCreate/TaskUpdate/Artifact, so this hook can't perform the sync itself --
+it fires a reminder that the sync is owed. The breadcrumb is agent-ux:ux-agent's
+job; the TaskCreate/TaskUpdate checklist is the calling skill's own job
+(agent-ux:ux-agent's isolated subagent context can't reach deferred tools).
 """
 import json
 import os
@@ -32,11 +33,12 @@ def main():
 
     print(json.dumps({
         "systemMessage": (
-            "SDD: a phase/slice artifact was written. Delegate to the "
-            "ux-agent subagent for the breadcrumb line, and sync the "
+            "SDD: a phase/slice artifact was written. Delegate to "
+            "agent-ux:ux-agent for the breadcrumb line, and sync the "
             "TaskCreate/TaskUpdate/TaskList checklist directly from the "
-            "calling skill (ux-agent's subagent context can't reach those "
-            "deferred tools) — see references/ux-conventions.md."
+            "calling skill (agent-ux:ux-agent's subagent context can't reach "
+            "those deferred tools) — see INTEROP.md's \"-> agent-ux (UX "
+            "rendering)\" section."
         )
     }))
     sys.exit(0)

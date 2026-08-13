@@ -53,7 +53,7 @@ Feature root:
 
 Use `workflow-state.md` as a compact machine-readable summary for the workflow.
 
-- `Current Phase` is the primary continuation pointer, and is what the top-level breadcrumb (rendered by `ux-agent`, see `agents/ux-agent.md`) reads directly — no separate progress field exists or should be invented.
+- `Current Phase` is the primary continuation pointer, and is what the top-level breadcrumb (rendered by `agent-ux:ux-agent`, see `INTEROP.md`'s "→ agent-ux (UX rendering)" section) reads directly — no separate progress field exists or should be invented.
 - `Goal` is seeded once via `agent-nelly:nelly-orchestrator` (if available) when the feature starts and rarely rewritten; `agent-nelly:nelly-orchestrator` uses it for the goal-alignment check in every brief it returns.
 - `Workflow Status` determines whether the next action is to continue, pause, hand off, or complete.
 - `Pause Reason` must align with any unresolved blocker or confirmation checkpoint in the phase artifacts.
@@ -155,7 +155,8 @@ Each `Approval Checkpoint` / `Phase Completion` line above is also the exact
 item set the calling skill mirrors into the harness's `TaskCreate` checklist
 on entry to this phase — the markdown checklist is the single source of
 truth; the task list is only a rendering of it. This is driven directly by
-the calling skill (not `ux-agent` — see `references/ux-conventions.md`).
+the calling skill (not `agent-ux:ux-agent` — see `INTEROP.md`'s "→ agent-ux (UX rendering)"
+section).
 
 ## `design/design.md`
 

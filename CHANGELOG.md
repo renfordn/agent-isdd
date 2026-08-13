@@ -1,5 +1,83 @@
 # Changelog
 
+## 0.1.7
+
+### Changed
+- Extracted UX rendering (breadcrumb, spec-canvas Artifacts, chapter markers, review dashboards,
+  out-of-scope task chips) to the new sibling plugin `agent-ux`. This repo's local
+  `agents/ux-agent.md` and `references/ux-conventions.md` are removed; every calling skill
+  (`spec-driven-development`, `workflow-manager`, `requirements-agent`, `design-author`) and
+  runtime surface (`hooks/phase_task_sync.py`, `hooks/subagent_report.py`,
+  `statusline/sdd_statusline.py`, `commands/isdd-status.md`, `commands/isdd-rewind.md`,
+  `references/artifact-templates.md`) now delegates to `agent-ux:ux-agent` instead, constructing
+  the UX Event Envelope (`caller`, `event_type`, `phase_state`, `delta`, `artifact_path`) defined
+  in `agent-ux`'s own `INTEROP.md`.
+- `INTEROP.md`: new "→ agent-ux (UX rendering)" section, mirroring the existing `agent-nelly`
+  soft-dependency pattern — `agent-ux` is a soft dependency; unavailability surfaces one plain
+  notice per session and never blocks the workflow. References `agent-ux`'s own
+  unavailability/fallback contract by name rather than restating it, per this extraction's
+  design mitigation against duplicated fallback logic across future callers (`agent-tdd`,
+  `code-reviewer`).
+- `tests/test_phase_task_sync.py`: updated the reminder-message assertion from `"ux-agent"` to
+  `"agent-ux:ux-agent"` to match the migrated hook wording; full suite (90 tests) still passes.
+- `skills/tdd-planner/SKILL.md` and `skills/doc-consistency-auditor/SKILL.md` were confirmed to
+  need no changes — `tdd-planner` has no live `ux-agent` delegation to migrate, and
+  `doc-consistency-auditor`'s two `ux-agent` mentions are illustrative prose (an example, and a
+  description of `code-reviewer`'s own unrelated rule), not live delegation calls.
+- Validated via a full manual trace/dry-run of a Requirements→Design→Tasks→handoff cycle against
+  `agent-ux`'s `INTEROP.md` envelope contract and its recorded example envelopes — output shape
+  (breadcrumb always first, one line per action taken) matches the pre-extraction baseline.
+- Token-cost comparison against the pre-extraction in-process baseline (Phase 5 of the
+  `agent-ux` plugin extraction plan): measured using a documented approximation (character
+  count ÷ 4; no tokenizer available in this environment), comparing OLD total = pre-extraction
+  `agent-isdd/agents/ux-agent.md` (4928 chars, the fixed per-call system-prompt cost) + a
+  reconstructed old-style narrated delegation prompt per event, versus NEW total =
+  `agent-ux/agents/ux-agent.md` + `agent-ux/INTEROP.md` combined (10455 + 10404 = 20859 chars,
+  the new fixed per-cross-plugin-call cost) + the actual recorded example-envelope JSON payload
+  per event. Result for all 3 representative events: **regression, not parity** —
+  `phase_transition` ~1402 → ~5318 tokens (+279%), `section_checkpoint` ~1484 → ~5393 tokens
+  (+263%), `review_threshold` ~1497 → ~5527 tokens (+269%). The regression is driven almost
+  entirely by the new fixed cost (`ux-agent.md` roughly doubled in size for the per-event-type
+  dispatch, and `INTEROP.md` adds ~10.4KB never paid before per call), not by the `delta`
+  payload shapes themselves, which stayed small. Per the extraction plan's Phase 5 blocker
+  clause, this is escalated back to a Design-level decision rather than trimmed here — see the
+  `agent-ux-plugin-extraction` proposal's tasks.md Phase 5 for the open blocker.
+- Follow-up refactor pass (`agent-ux` commit `6fbc9b5`): trimmed redundant restatement between
+  `INTEROP.md` and `ux-agent.md` (contract-level detail now owned solely by `INTEROP.md`;
+  `ux-agent.md` cross-references rather than duplicates) and converted the per-`event_type`
+  delta-shape prose to a table. Combined fixed cost 20859 → 17800 chars (-14.7%). All 6
+  `EXPECTED-OUTPUTS.md` scenarios re-verified unchanged — no behavior regression. Recomputed
+  comparison: `phase_transition` ~1402 → ~4621 tokens (+229%), `section_checkpoint` ~1484 →
+  ~4702 tokens (+217%), `review_threshold` ~1497 → ~4715 tokens (+215%). **Still regressed for
+  all 3 events** — closed roughly a third of the original gap, but full parity (design's stated
+  "equal or smaller" success criterion) was not reached and, per the assessment carried out
+  during this trim, does not appear closeable through further prose compression alone: the
+  two-file cross-plugin contract (frontmatter, tool list, per-event dispatch logic, a separately
+  maintained `INTEROP.md`) has an irreducible fixed cost the old single self-contained file never
+  had to pay. Remains an open blocker pending a Design-level decision (see tasks.md Phase 5).
+- **Measurement correction**: the two comparisons above both counted `agent-ux/INTEROP.md`
+  toward "the new fixed per-call cost." It isn't one — `ux-agent.md` is fully self-contained at
+  runtime (every dispatch section restates its own exact `delta` key set; its `../INTEROP.md`
+  citations are maintainer cross-references, never a `Read` instruction), and the caller's
+  delegation prompt doesn't embed `INTEROP.md` either. Re-measured with fixed cost =
+  `ux-agent.md` alone. Also removed `ux-agent.md`'s "Guardrails" section, self-labeled
+  `(recap — see dispatch sections above for full rule text)` — literal in-file duplicate prose
+  (8759 → 8193 chars, `agent-ux` commit `72e9af6`). Corrected comparison: OLD = 4928 chars +
+  hand-written prose-narration prompt (matching the JSON payloads' information content) vs. NEW
+  = 8193 chars + the real envelope JSON from `references/example-envelopes/`. Result:
+  `phase_transition` ~1295 → ~2152 tokens (+66%), `section_checkpoint` ~1386 → ~2227 (+61%),
+  `review_threshold` ~1424 → ~2361 (+66%) — a real regression, roughly a third of the previously
+  reported +215–279%, attributable to `ux-agent.md`'s move from prose-narration to structured
+  envelope dispatch rather than to the extraction itself. Still an open blocker pending a
+  Design-level decision — see `workflow-state.md`'s "Measurement Correction" section for the
+  full methodology.
+- **Decision: accepted.** The ~61-66% regression is accepted as the cost of
+  `ux-agent.md`'s move from prose narration to structured, validated envelope dispatch — a
+  robustness gain (explicit field validation, misuse detection, per-event gating rules stated
+  inline), not extraction overhead. The `agent-ux` plugin extraction stands; this closes the
+  Phase 5 blocker without further trimming. Design's stated "equal or smaller" success criterion
+  is formally not met, but is superseded by this explicit accept decision.
+
 ## 0.1.6
 
 ### Added
