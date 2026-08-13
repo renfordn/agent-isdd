@@ -47,32 +47,33 @@ Do not skip forward across phases unless the current phase is complete and not b
 
 ## Visible Progress (every phase-transition or status response)
 
-Before doing anything else in a response that transitions or reports phase, delegate to the
-`ux-agent` subagent for the breadcrumb line. On an actual phase transition (Requirements →
-Design → Tasks → Implementation, or a restart/rewind), tell `ux-agent` so it can also mark a
-session chapter — never on a status response that isn't itself a transition. Never hand-roll the
-breadcrumb text or drive `Artifact`/`mark_chapter` directly from this skill — that's `ux-agent`'s
-job (see `agents/ux-agent.md`).
+Before doing anything else in a response that transitions or reports phase, delegate to
+`agent-ux:ux-agent` (via the `Agent` tool) with a `breadcrumb_only` event envelope
+(`caller: agent-isdd`, `event_type: breadcrumb_only`, `phase_state`) for the breadcrumb line. On
+an actual phase transition (Requirements → Design → Tasks → Implementation, or a
+restart/rewind), send a `phase_transition` envelope instead so it can also mark a session
+chapter — never on a status response that isn't itself a transition. Never hand-roll the
+breadcrumb text or drive `Artifact`/`mark_chapter` directly from this skill — that's
+`agent-ux:ux-agent`'s job (see `INTEROP.md`'s "→ agent-ux (UX rendering)" section for the
+envelope contract and the unavailability fallback).
 
-The phase `TaskCreate` checklist is different: `ux-agent` cannot reach `TaskCreate`/
-`TaskUpdate`/`TaskList` from its isolated subagent context (deferred-tool resolution via
-`ToolSearch` doesn't reach subagents in this harness — observed in a past session, not a
-documented platform guarantee; re-verify if harness behavior seems to have changed). Render/refresh
-the checklist **directly from this skill instead**, in the same response: self-load the three
+The phase `TaskCreate` checklist is different: ux-agent cannot reach `TaskCreate`/`TaskUpdate`/
+`TaskList` from its subagent context (see `agent-ux:ux-agent`). Render/refresh the checklist
+**directly from this skill instead**, in the same response: self-load the three
 tools via `ToolSearch` (`select:TaskCreate,TaskUpdate,TaskList`) once per session if not already
 loaded, call `TaskList` to check for existing items before creating, then `TaskCreate`/
-`TaskUpdate` per `references/ux-conventions.md`'s Phase tick list conventions.
+`TaskUpdate` per `agent-ux`'s `references/ux-conventions.md`'s Phase tick list conventions (the
+convention itself, driven by the calling skill and not `agent-ux:ux-agent`, is unchanged by the
+extraction — only where it's documented moved).
 
 ## Goal-Aware Memory
 
-Before starting or continuing meaningful phase work, if `agent-nelly:nelly-orchestrator` is
-available (per `workflow-manager`'s Availability Check — cached in `workflow-state.json`'s
-`agent_nelly_available` field), delegate to it for a holistic brief (Intent, prior decisions,
-open risks, Intent-alignment check) instead of reading `~/.claude/sdd-memory/` files directly.
-If it flags an Intent-alignment concern, surface it to the user before proceeding — don't
-silently continue past a stated drift. If unavailable, skip this step entirely — surface one
-plain notice and continue the workflow without a memory brief; this is never a blocking
-condition.
+Before starting or continuing meaningful phase work, when agent-nelly is available (per the
+Availability Check defined in `workflow-manager/SKILL.md`), delegate to
+`agent-nelly:nelly-orchestrator` for a holistic brief (Intent, prior decisions, open risks,
+Intent-alignment check) instead of reading `~/.claude/sdd-memory/` files directly. If it flags
+an Intent-alignment concern, surface it to the user before proceeding — don't silently continue
+past a stated drift.
 
 This skill is the single fetch/delegation point, per continuous stretch of phase work, for the
 nelly brief **and** for `planning-agent`/`spec-reviewer` findings still valid from earlier in
@@ -168,9 +169,11 @@ workflow:
   for a goal-aware brief (Intent, prior decisions, open risks, Intent-alignment check); it is
   the sole writer into agent-nelly's own memory store, which agent-isdd never reads or writes
   directly.
-- `ux-agent` — delegate at every phase transition for the breadcrumb, chapter markers, and any
-  spec-canvas Artifact. It does not own the `TaskCreate` checklist — see "Task Tracker Sync"
-  below.
+- `agent-ux:ux-agent` — an external peer-plugin subagent, delegate at every phase transition (and
+  breadcrumb-only status response) for the breadcrumb, chapter markers, and any spec-canvas
+  Artifact, via the UX Event Envelope (`caller: agent-isdd`, `event_type`, `phase_state`,
+  `delta`, `artifact_path` — see `INTEROP.md`'s "→ agent-ux (UX rendering)" section). It does not
+  own the `TaskCreate` checklist — see "Task Tracker Sync" below.
 
 Delegation rules:
 - Prefer the subagent over inlining these when the task is well-scoped.
@@ -218,40 +221,20 @@ handles it: review first, rewrite only the weak sections into EARS format, prese
 draft, pause for confirmation, and only then treat it as the canonical requirements artifact.
 Never treat incoming material as automatically sufficient for phase advancement.
 
-## Auto-Advance Rules
+## Phase Gating
 
-After producing a phase artifact, auto-advance by default unless a flagged condition is
-present: unresolved ambiguity, missing required fields, conflicting constraints, high-risk
-migration, weak testability, a task too large for a safe TDD slice, or an
-`agent-nelly:nelly-orchestrator` Intent-alignment flag not yet resolved with the user (only
-applicable when it is available).
-
-If a flagged condition exists: pause, explain the blocker clearly, do not advance until it's
-resolved. When auto-advancing: update `workflow-state.md`, `recap.md`, the phase file's
-`Status` section, and delegate to `ux-agent` to refresh the breadcrumb/checklist.
-
-## Design Gate
-
-Ready to advance into `Tasks` only when: it maps clearly to approved requirements, touched
-modules/interfaces/boundaries are explicit (grounded in `planning-agent`'s findings, not
-guessed), validation strategy is credible, tradeoffs and edge-case handling are documented, no
-unresolved contradiction remains, and no unresolved Security Finding remains.
+Phase gating, auto-advance rules, pause conditions, and state repair are governed entirely by
+`workflow-manager` — see its `SKILL.md`.
 
 ## Native Plan Mode
 
 `workflow-manager` owns entering native plan mode (`EnterPlanMode`) at `before-design` and
 exiting it (`ExitPlanMode`) at `after-tasks` once the `Tasks` checklist passes — see its "Native
 Plan Mode Gate" section for the full contract. This stays here in the orchestrator rather than
-`ux-agent` because it is a user-facing approval checkpoint (`ux-agent` never talks to the user).
+delegated to `agent-ux:ux-agent` because it is a user-facing approval checkpoint (`agent-ux:ux-agent`
+never talks to the user).
 Requesting approval this way is in addition to the phase gates above, not instead of them —
 `ExitPlanMode` is only ever called once the Tasks checklist has already passed.
-
-## TDD Slice Rule
-
-A safe slice targets one behavior change and/or one file or module touched. If a task is too
-large: propose a smaller slice, ask for confirmation, only then continue. This sizing discipline
-is what makes the eventual `agent-tdd` handoff safe — `agent-tdd` enforces its own slice-sizing
-too, but a well-sliced `tasks.md` avoids that friction entirely.
 
 ## Task Tracker Sync
 
@@ -285,17 +268,3 @@ the user explicitly asks to change it.
 Structured sections with checklists, concise prose plus bullet lists, for `requirements.md`,
 `design.md`, and `recap.md`. For `tasks.md`, optimize for agent handoff: minimal narration,
 explicit ordered execution steps, concrete validation steps.
-
-## Guardrails
-
-- Do not require the user to manually prompt each phase skill.
-- Do not move into `Design` until requirements pass the gate.
-- Do not move into `Tasks` until design is coherent and testable.
-- Do not allow oversized tasks to pass through unchanged.
-- Do not drive the Red-Green-Refactor loop or the code-review gate — those belong solely to
-  `agent-tdd` and `code-reviewer` after the Implementation Handoff.
-- Do not hide gaps with broad assumptions, and do not hide an Intent-alignment flag.
-- Do not hand-roll breadcrumb/checklist rendering — delegate to `ux-agent`.
-- Do not call `ExitPlanMode` before the `Tasks` checklist passes, and do not skip the plan-mode
-  gate silently — fall back to conversational confirmation only when the tools are unavailable.
-- Prefer interviewing the user over silently inventing product requirements.

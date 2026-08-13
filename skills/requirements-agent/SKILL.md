@@ -40,7 +40,8 @@ draft.
    ticket thread), delegate the assessment to the `spec-reviewer` subagent — it returns gaps and
    rewritten EARS sections without spending this thread's context on the raw source. Before
    delegating, call `agent-nelly:nelly-orchestrator` for a brief on the source material's
-   touched area (when available, per the Availability Check), and pass that brief down to
+   touched area (when agent-nelly is available, per the Availability Check defined in
+   `workflow-manager/SKILL.md`), and pass that brief down to
    `spec-reviewer` the same way `design-author` passes a brief down to `planning-agent`. For a
    short draft, do the assessment inline.
 3. Rewrite only the weak sections into EARS-based format — never flatten nuanced constraints
@@ -56,11 +57,13 @@ expressed in EARS ruleset format where applicable.
 
 ## Live Spec Canvas
 
-Delegate to `ux-agent` at each section-confirmation checkpoint (a section just got locked or
-materially changed) so it can publish/redeploy the spec-canvas Artifact — see
-`references/ux-conventions.md`. Do not redeploy on every message; that's `ux-agent`'s job to
-gate, but this skill is what tells it a checkpoint occurred. The plain markdown draft stays the
-inline, always-available fallback regardless of Artifact availability.
+Delegate to `agent-ux:ux-agent` at each section-confirmation checkpoint (a section just got
+locked or materially changed) with a `section_checkpoint` event envelope
+(`section_name`, `section_body`, `remaining_section_names`, `open_gaps`, `artifact_path`) so it
+can publish/redeploy the spec-canvas Artifact — see `INTEROP.md`'s "→ agent-ux (UX rendering)"
+section. Do not redeploy on every message; that's `agent-ux:ux-agent`'s job to gate, but this
+skill is what tells it a checkpoint occurred. The plain markdown draft stays the inline,
+always-available fallback regardless of Artifact availability.
 
 ## Output Shape
 

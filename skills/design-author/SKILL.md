@@ -16,15 +16,13 @@ migration notes needing implementation-facing design.
 Before drafting, delegate to two subagents rather than relying only on what's already in
 context:
 
-1. `agent-nelly:nelly-orchestrator` — reuse the brief the caller passed down when it has already
-   been fetched this session; call `agent-nelly:nelly-orchestrator` directly only when
-   `design-author` is invoked standalone with no prior brief in context, or the passed-down
-   brief predates a Requirements/Design change. When a fresh call is made (per either of those
-   conditions), it returns a holistic brief (Intent, prior decisions, open risks, relevant past
-   entries, Intent-alignment check). Seed `planning-agent` with it (whether reused or freshly
-   fetched) so it isn't re-deriving project context the memory already has. If unavailable
-   (per the Availability Check) and no prior brief was passed down, skip this step and proceed
-   without a brief, per the Availability Check's graceful-degradation rule.
+1. `agent-nelly:nelly-orchestrator` — reuse the brief the caller passed down; call agent-nelly
+   directly only per the re-fetch triggers defined in `spec-driven-development`'s Goal-Aware
+   Memory section, when agent-nelly is available (per the Availability Check defined in
+   `workflow-manager/SKILL.md`). When a fresh call is made, it returns a holistic brief (Intent,
+   prior decisions, open risks, relevant past entries, Intent-alignment check). Seed
+   `planning-agent` with it (whether reused or freshly fetched) so it isn't re-deriving project
+   context the memory already has.
 2. `planning-agent` — wide-fast then deep-focused codebase research for the actual touchpoints,
    interfaces, and constraints this design must respect. Reuse a still-valid `planning-agent`
    finding already fetched earlier in this same continuous stretch of phase work (per
@@ -62,7 +60,7 @@ When architecture, a data flow, or a state transition is genuinely clearer as a 
 prose or a table — not by default, and not for every design — render it with
 `mcp__visualize__show_widget` (call `mcp__visualize__read_me` once first, silently, per its own
 instructions). This is a lighter-weight, one-shot visual for explaining the design as you write
-it; it is not the spec canvas (that's `ux-agent`'s redeployable Artifact over confirmed
+it; it is not the spec canvas (that's `agent-ux:ux-agent`'s redeployable Artifact over confirmed
 requirements sections, a different artifact for a different phase). Reference the diagram from
 `design.md` in prose (what it shows and why) rather than treating the widget itself as the
 durable record — `design.md` stays the artifact of record.

@@ -15,14 +15,11 @@ confirmation checkpoint.
 Given existing source material (spec, ticket, PRD, migration notes, or a requirement draft) plus
 any file paths the caller passes:
 
-0. When `agent-nelly:nelly-orchestrator` is available (per `workflow-manager`'s Availability
-   Check — the caller, `requirements-agent`, has already inspected the current session's
-   agent-types listing for `agent-nelly:nelly-orchestrator`), the caller has already called it
-   for a brief on the source material's touched area and passes that brief down to you; use it
-   the same way `planning-agent` uses a caller-passed brief, to skip re-deriving context it
-   already gives you. When unavailable, this is graceful degradation, never a blocking
-   condition — proceed exactly as steps 1-6 below already describe, with no call, no pause, and
-   no error.
+0. When agent-nelly is available (per the Availability Check defined in
+   `workflow-manager/SKILL.md`), the caller (`requirements-agent`) has already called it for a
+   brief on the source material's touched area and passes that brief down to you; use it the
+   same way `planning-agent` uses a caller-passed brief, to skip re-deriving context it already
+   gives you.
 1. Read the source material and any referenced files.
 2. Check whether the required requirement fields exist: problem statement, user outcome,
    constraints, non-goals, edge cases, success criteria, dependencies.

@@ -300,10 +300,10 @@ materially weak, or unresolved ambiguity remains.
 ### Design
 
 Pass only when: `Phase Decision` is fully satisfied, requirement coverage is explicit,
-interfaces/touchpoints/validation strategy are present (grounded in `planning-agent`'s
-findings, not guessed), `Phase Completion` is fully satisfied, `State` is `Approved`. Fail when
-any phase decision item is incomplete, design contradicts approved requirements, or validation
-strategy is weak or absent.
+interfaces/touchpoints are grounded in research (per design-author's Research First rule),
+validation strategy is present, `Phase Completion` is fully satisfied, `State` is `Approved`.
+Fail when any phase decision item is incomplete, design contradicts approved requirements, or
+validation strategy is weak or absent.
 
 ### Tasks
 
@@ -390,13 +390,12 @@ classify the change before reacting, reusing the Rewind Contract for its only mu
 
 ## Task Tracker Sync
 
-The breadcrumb is owned by `ux-agent`; the `TaskCreate`/`TaskUpdate`/`TaskList` checklist is not
-(`ux-agent`'s isolated subagent context cannot reach deferred tools via `ToolSearch` in this
-harness — observed in a past session, not a documented platform guarantee; re-verify if harness
-behavior seems to have changed). Call `TaskCreate`/`TaskUpdate`/`TaskList` directly, self-
-loaded via `ToolSearch` first. `hooks/phase_task_sync.py` fires a reminder on every
+The breadcrumb is owned by `agent-ux:ux-agent`; the `TaskCreate`/`TaskUpdate`/`TaskList`
+checklist is not — ux-agent cannot reach those from its subagent context (see
+`agent-ux:ux-agent`). Call `TaskCreate`/`TaskUpdate`/`TaskList` directly, self-loaded via
+`ToolSearch` first. `hooks/phase_task_sync.py` fires a reminder on every
 `workflow-state.md`/`tasks.md` write as a backstop — on that reminder, sync the checklist
-directly rather than delegating to `ux-agent`.
+directly rather than delegating to `agent-ux:ux-agent`.
 
 ## Guardrails
 
