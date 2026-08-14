@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.8
+
+### Fixed
+- `spec-driven-development` SKILL.md's Implementation Handoff: after taking `agent-tdd`'s
+  returned handoff report, if its Handoff Facts field is non-empty and `agent_nelly_available`
+  is `true` in `workflow-state.json`, call `agent-nelly:nelly-orchestrator` with those facts as
+  a `new facts` batch (one call, no re-fetch of the brief). Previously these facts were dropped
+  on the floor after implementation completed.
+
 ## 0.1.7
 
 ### Changed
