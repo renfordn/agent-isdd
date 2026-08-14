@@ -212,9 +212,12 @@ Contracts And Interfaces, and an optional `agent-nelly` Pre-Slice Brief).
 2. Spawn `agent-tdd:agent-TDD` with the constructed Slice Spec.
 3. Take its returned handoff report, log the handoff in `recap.md`, set
    `Workflow Status: Complete` in `workflow-state.md`.
-4. Do not resume, monitor, or drive `agent-TDD` past this initial spawn — anything after its
+4. If the report's Handoff Facts field is non-empty and `agent_nelly_available` is `true` in
+   `workflow-state.json`, call `agent-nelly:nelly-orchestrator` with those facts as a `new facts`
+   batch. One call only — no re-fetch of the brief needed.
+5. Do not resume, monitor, or drive `agent-TDD` past this initial spawn — anything after its
    own Green→Refactor review pause is outside this skill's scope.
-5. If `agent-tdd` (or `agent-nelly` for the Pre-Slice Brief) is not installed, pause with a
+6. If `agent-tdd` (or `agent-nelly` for the Pre-Slice Brief) is not installed, pause with a
    concrete, actionable message rather than attempting the work internally.
 
 ## Requirements Gate
