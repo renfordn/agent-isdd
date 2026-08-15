@@ -157,5 +157,53 @@ class PostWriteCheckJsonSyncTests(unittest.TestCase):
             self.assertIsNotNone(msg)
 
 
+class PostWriteCheckRootStateTests(unittest.TestCase):
+    """Coverage for the additive .sdd-state.json dual-write at the project root."""
+
+    def test_root_state_written_alongside_memory_dir_json(self):
+        with h.temp_git_repo() as repo, h.temp_home() as home:
+            feature_dir = h.feature_spec_dir(home, repo)
+            md_path = h.seed_state_file(
+                feature_dir, current_phase="Design", workflow_status="In Progress"
+            )
+            h.run_hook_message(
+                "post_write_check.py",
+                {"tool_input": {"file_path": md_path}, "cwd": repo},
+                env_extra={"HOME": home},
+            )
+
+            root_path = os.path.join(repo, ".sdd-state.json")
+            self.assertTrue(os.path.isfile(root_path))
+            with open(root_path) as fh:
+                root_state = json.load(fh)
+            self.assertEqual(root_state["current_phase"], "Design")
+            self.assertEqual(root_state["phase_state"], "In Progress")
+            self.assertIn("last_updated", root_state)
+
+            # existing memory-dir workflow-state.json write is untouched by this addition
+            memory_json_path = os.path.join(feature_dir, "workflow-state.json")
+            self.assertFalse(os.path.isfile(memory_json_path))
+
+    def test_root_state_skipped_without_cwd(self):
+        with h.temp_git_repo() as repo, h.temp_home() as home:
+            feature_dir = h.feature_spec_dir(home, repo)
+            md_path = h.seed_state_file(feature_dir, current_phase="Design")
+            h.run_hook_message(
+                "post_write_check.py",
+                {"tool_input": {"file_path": md_path}},
+                env_extra={"HOME": home},
+            )
+            self.assertFalse(os.path.isfile(os.path.join(repo, ".sdd-state.json")))
+
+    def test_root_state_not_written_for_tasks_md(self):
+        with h.temp_git_repo() as repo, h.temp_home() as home:
+            h.run_hook_message(
+                "post_write_check.py",
+                {"tool_input": {"file_path": "/some/feature/tasks/tasks.md"}, "cwd": repo},
+                env_extra={"HOME": home},
+            )
+            self.assertFalse(os.path.isfile(os.path.join(repo, ".sdd-state.json")))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -4,16 +4,21 @@ hooks (phase_task_sync.py + state_consistency_check.py) that fired on every
 Write/Edit/MultiEdit/NotebookEdit. Running one Python process instead of two
 halves subprocess startup overhead on every file write in the session.
 
-Behaviour is unchanged from the two originals:
+Behaviour is unchanged from the two originals, plus one additive sync:
   - workflow-state.md writes: sync mirrored fields to workflow-state.json
     (silently, authoritative writer per workflow-manager's Write Responsibilities
-    section), then remind the model to sync the visible progress UI.
+    section), mirror the same fields into a lightweight `.sdd-state.json` at the
+    project root (cwd) so other tools can cheaply read current phase without
+    parsing markdown or reaching into ~/.claude/sdd-memory, then remind the model
+    to sync the visible progress UI.
   - tasks/tasks.md writes: remind the model to sync the visible progress UI.
   - All other paths: silent no-op, exit 0.
 
-The JSON sync is silent (no systemMessage) on normal operation; the hook_history
-entry in workflow-state.json serves as the audit trail. The UI sync reminder
-fires for both watched paths and produces a single systemMessage.
+Both JSON syncs are silent (no systemMessage) on normal operation; the
+hook_history entry in workflow-state.json serves as the audit trail for the
+memory-dir copy. `.sdd-state.json` is a plain mirror with no history of its own.
+The UI sync reminder fires for both watched paths and produces a single
+systemMessage.
 """
 import datetime
 import json
@@ -73,6 +78,26 @@ def _sync_json(file_path):
     write_state_json(json_path, json_fields)
 
 
+def _write_root_state(cwd, md_fields):
+    """Mirror the same fields into <cwd>/.sdd-state.json -- additive to the memory-dir
+    workflow-state.json sync above, never a replacement. Lets other tools cheaply read
+    current phase without parsing workflow-state.md or resolving the memory dir.
+    """
+    if not cwd or not md_fields:
+        return
+
+    data = {
+        json_key: md_fields[md_key]
+        for md_key, json_key in FIELD_MAP.items()
+        if md_fields.get(md_key) is not None
+    }
+    if not data:
+        return
+
+    data["last_updated"] = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+    write_state_json(os.path.join(cwd, ".sdd-state.json"), data)
+
+
 def main():
     try:
         payload = json.load(sys.stdin)
@@ -91,6 +116,7 @@ def main():
 
     if is_state:
         _sync_json(file_path)
+        _write_root_state(payload.get("cwd"), parse_state(file_path))
 
     print(json.dumps({
         "systemMessage": (

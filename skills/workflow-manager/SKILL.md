@@ -101,6 +101,14 @@ two tiers of fields with different owners:
 On initial scaffold (`start`), create both files from the canonical templates; after that, only
 `workflow-state.md` needs updating for phase-state changes — the hook handles the rest.
 
+`hooks/post_write_check.py` additionally mirrors the same four fields into a lightweight
+`.sdd-state.json` at the project root (the cwd the write happened in) on every
+`workflow-state.md` write — so other tools can cheaply check current phase without parsing
+markdown or resolving `~/.claude/sdd-memory/<project-slug>/`. This is a plain field mirror with
+no `hook_history` of its own; the memory-dir `workflow-state.json` remains the authoritative,
+audited copy. Nothing in this skill or elsewhere needs to write `.sdd-state.json` directly — it
+is entirely hook-owned, additive, and never a substitute for `workflow-state.md`.
+
 ## Scaffolding (folded from the former `artifact-scaffolder` skill)
 
 Per-feature artifacts are plugin-generated state, not source — they live under the project's
