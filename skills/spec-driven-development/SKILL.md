@@ -80,10 +80,10 @@ extraction — only where it's documented moved).
 
 Before starting or continuing meaningful phase work, when agent-nelly is available (per the
 Availability Check defined in `workflow-manager/SKILL.md`), delegate to
-`agent-nelly:nelly-orchestrator` for a holistic brief (Intent, prior decisions, open risks,
-Intent-alignment check) instead of reading `~/.claude/sdd-memory/` files directly. If it flags
-an Intent-alignment concern, surface it to the user before proceeding — don't silently continue
-past a stated drift.
+`agent-nelly:nelly-orchestrator` for a holistic brief (nelly's four output sections: Intent,
+Relevant entries, Intent alignment, Written) instead of reading `~/.claude/sdd-memory/` files
+directly. If it flags an Intent-alignment concern, surface it to the user before proceeding —
+don't silently continue past a stated drift.
 
 When the next phase is **Design**, include `surface relevant memory: true` in the nelly call so
 the brief's `Relevant entries` section is populated. `design-author` passes those entries to
@@ -189,7 +189,7 @@ workflow:
 - `agent-nelly:nelly-orchestrator` — an external peer-plugin subagent, not one of this plugin's
   own `agents/`, invoked the same way (via the `Agent` tool with that literal `subagent_type`
   string), gated by the Availability Check — delegate before any phase starts, when available,
-  for a goal-aware brief (Intent, prior decisions, open risks, Intent-alignment check); it is
+  for a goal-aware brief (Intent, Relevant entries, Intent alignment, Written); it is
   the sole writer into agent-nelly's own memory store, which agent-isdd never reads or writes
   directly.
 - `agent-ux:ux-agent` — an external peer-plugin subagent, delegate at every **phase transition**
