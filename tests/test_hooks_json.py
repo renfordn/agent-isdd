@@ -29,11 +29,16 @@ class HooksJsonStructureTests(unittest.TestCase):
     def test_is_valid_json(self):
         _load()  # raises on malformed JSON
 
-    def test_state_consistency_check_registered_on_post_tool_use(self):
+    def test_post_write_check_registered_on_post_tool_use(self):
+        """state_consistency_check.py + phase_task_sync.py were merged into
+        post_write_check.py (Fix #5) to halve subprocess spawns per write."""
         config = _load()
         commands = _commands_for(config, "PostToolUse", "Edit|Write|MultiEdit|NotebookEdit")
-        self.assertTrue(any("state_consistency_check.py" in c for c in commands))
-        self.assertTrue(any("phase_task_sync.py" in c for c in commands))
+        self.assertTrue(any("post_write_check.py" in c for c in commands))
+        # Old scripts must no longer be wired directly — they are now internal
+        # implementation details called from post_write_check.py.
+        self.assertFalse(any("state_consistency_check.py" in c for c in commands))
+        self.assertFalse(any("phase_task_sync.py" in c for c in commands))
 
     def test_slice_spec_gate_registered_on_pre_tool_use_task(self):
         config = _load()

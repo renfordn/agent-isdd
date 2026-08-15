@@ -29,11 +29,13 @@ context:
    `spec-driven-development`'s extended brief-reuse convention and its three re-fetch triggers)
    instead of re-delegating for the same touchpoints. Record its findings in the `Research
    Basis` section of `design.md` (see `references/artifact-templates.md`) so a later reader can
-   see the design is grounded, not guessed. Before delegating, make the pre-sweep
-   `agent-nelly:nelly-orchestrator` call for candidate file/module hits (`target files` plus
-   `surface relevant memory` set), when available per the Availability Check, and pass those
-   hits down to `planning-agent` alongside the brief. After `planning-agent` returns, take its
-   "Nelly summaries to write (if any)" output and persist it via
+   see the design is grounded, not guessed. Pass the caller's brief (including its `Relevant
+   entries` section, which the orchestrator fetches with `surface relevant memory: true` before
+   routing into this skill — see `spec-driven-development/SKILL.md`'s Goal-Aware Memory section)
+   to `planning-agent` alongside the brief so it can skip re-deriving context nelly already
+   gave. Do **not** make a separate pre-sweep `agent-nelly:nelly-orchestrator` call here — the
+   relevant entries already in the brief serve this purpose. After `planning-agent` returns,
+   take its "Nelly summaries to write (if any)" output and persist it via
    `agent-nelly:nelly-orchestrator`'s `new fact`/`new facts` input — `planning-agent` itself
    never writes it.
 

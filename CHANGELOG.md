@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.1.9
+
+### Changed
+- Merged `hooks/phase_task_sync.py` and `hooks/state_consistency_check.py` (both fired on every
+  `Write`/`Edit`/`MultiEdit`/`NotebookEdit`) into a single `hooks/post_write_check.py`, halving
+  subprocess startup overhead per file write. Behavior unchanged: `workflow-state.md` writes
+  sync mirrored fields to `workflow-state.json` and remind the model to sync the visible
+  progress UI; `tasks/tasks.md` writes remind the model to sync the UI; all other paths no-op.
+- `workflow-manager/SKILL.md`'s `workflow-state.md` vs `workflow-state.json` section rewritten
+  from a conflict-resolution rule to an explicit Write Responsibilities split: mirrored fields
+  (`current_phase`, `phase_state`, `pause_reason`, `implementation_requested`) are written
+  exclusively by the hook, never by the model directly; JSON-only fields
+  (`agent_nelly_available`, `hook_history`, `rollback_pending`, `recap_path`,
+  `blocked_fields`) are written by the model or their owning hook.
+- `agent-tdd` availability is now checked inline at the Implementation Handoff (scanning the
+  session's `<system-reminder>` agent-types block for `agent-tdd:agent-TDD`) instead of being
+  cached — it's only needed once, at the handoff, unlike `agent-nelly` which is used throughout
+  the workflow and stays eagerly checked at `before-requirements`.
+- `agent-nelly` write-back extended to every `after-*` phase-boundary hook (previously only
+  after the `agent-tdd` handoff): project-level discoveries worth persisting independently of
+  the feature's own artifacts (confirmed/denied interface assumptions, coverage gaps, risk
+  flags) are batched into a `new facts` call, never blocking on failure.
+- `design-author`'s `planning-agent` delegation no longer makes its own separate pre-sweep
+  `agent-nelly:nelly-orchestrator` call — `spec-driven-development` now requests
+  `surface relevant memory: true` on its single pre-Design nelly call, and `design-author`
+  passes the brief's `Relevant entries` section straight through to `planning-agent`, removing
+  a redundant nelly spawn.
+- New `references/rollback-guide.md`: step-by-step instructions for both the automatic
+  (`SubagentStop`-observed) and human-relay rollback paths from `agent-tdd`/`code-reviewer` back
+  into agent-isdd, linked from `INTEROP.md`'s rollback section.
+- Deleted `hooks/phase_task_sync.py` and `hooks/state_consistency_check.py` (unregistered dead
+  files left behind by the `post_write_check.py` merge above) along with their standalone
+  `tests/test_phase_task_sync.py` / `tests/test_state_consistency_check.py`, which were still
+  exercising that dead code even though it no longer ran in production. Coverage folded into a
+  new `tests/test_post_write_check.py` that tests the merged hook directly.
+
 ## 0.1.8
 
 ### Fixed

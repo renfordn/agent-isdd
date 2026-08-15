@@ -38,6 +38,14 @@ This is a **one-directional handoff**: agent-isdd does not resume, monitor, or d
 Green→Refactor review pause (via `SendMessage` to its agent id, per `agent-tdd`'s own contract)
 is outside agent-isdd's scope once the handoff is made.
 
+**Availability check**: unlike `agent-nelly`, which is checked eagerly at `before-requirements`
+and cached in `workflow-state.json` because it is used throughout the workflow, `agent-tdd` is
+only needed once — at the handoff. Check availability inline at that point by scanning the
+current session's `<system-reminder>` agent-types block for the string `agent-tdd:agent-TDD`.
+No caching or `workflow-state.json` field is needed. If absent, pause with a concrete,
+actionable message (e.g. "agent-tdd is not installed in this session — install it before
+requesting implementation") rather than attempting the work internally.
+
 ## ← agent-tdd / code-reviewer (rollback request)
 
 Sometimes `agent-tdd`'s Green→Refactor review pause (or `code-reviewer`) discovers that the
@@ -64,7 +72,9 @@ Rewind Contract automatically.
 `SubagentStop` event. `code-reviewer`'s findings, and any `agent-tdd` resume happening via
 `SendMessage` in a session agent-isdd isn't part of, have no automatic hook — the marker text
 is meant to be relayed by a human (or by whichever context is driving) directly into a message
-to agent-isdd, which `before-continue` also recognizes when present in user input.
+to agent-isdd, which `before-continue` also recognizes when present in user input. For
+step-by-step instructions on both paths, see
+[`references/rollback-guide.md`](references/rollback-guide.md).
 
 Do not treat this as a fully automatic guarantee: it is automatic exactly where a
 `SubagentStop` can observe the report, and human-relay everywhere else.
@@ -99,10 +109,12 @@ checklist directly, unchanged from today's local-agent behavior.
 ## → agent-nelly (memory)
 
 Before starting or continuing meaningful phase work, `agent-isdd` delegates to
-`agent-nelly:nelly-orchestrator` for a goal-aware brief (Goal, prior decisions, open risks,
-goal-alignment check) rather than reading `~/.claude/sdd-memory/` cross-feature index files
-directly. If `agent-nelly` is unavailable, agent-isdd surfaces one plain notice and continues
-without the goal-alignment check — never a hard dependency.
+`agent-nelly:nelly-orchestrator` for a goal-aware brief — nelly's four output sections are
+`Intent`, `Relevant entries`, `Intent alignment`, and `Written`; agent-isdd uses `Intent` to
+seed/check the feature's `Goal` field, and `Intent alignment` as the divergence signal — rather
+than reading `~/.claude/sdd-memory/` cross-feature index files directly. If `agent-nelly` is
+unavailable, agent-isdd surfaces one plain notice and continues without the Intent-alignment
+check — never a hard dependency.
 
 agent-isdd still owns writing its own per-feature `spec/` artifacts
 (`workflow-state.md`/`.json`, `requirements.md`, `design.md`, `tasks.md`, `recap.md`) under
@@ -115,3 +127,15 @@ still visible in context — it reuses the in-session brief instead. The full re
 convention lives in `skills/spec-driven-development/SKILL.md`'s Goal-Aware Memory section (this
 is a documentation pointer, not a duplicate definition). `workflow-state.json` is intentionally
 unchanged by this dedup convention — it carries no brief-caching field.
+
+**Write-back during spec phases**: at each `after-*` hook (`after-requirements`,
+`after-design`, `after-tasks`), when `agent_nelly_available` is `true`, agent-isdd calls
+`agent-nelly:nelly-orchestrator` with a `new facts` batch containing any project-level
+discoveries worth persisting across future sessions — for example: interface assumptions
+confirmed or denied during requirements, coverage gaps or unexpected interfaces found during
+design research, risk flags raised by `tdd-planner`. The criterion is "would a future
+conversation benefit from knowing this independently of this feature's own artifacts?" — ephemeral
+workflow state (user confirmed step N, phase advanced) never qualifies. If the call fails or
+nelly is unavailable, log a one-line note in `recap.md` and continue — it is never a blocking
+condition. agent-nelly requires no changes to support this: `new facts` is already part of its
+standard call contract (see `agent-nelly`'s `INTEROP.md`).
