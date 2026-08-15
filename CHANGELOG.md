@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.1.10
+
+### Added
+- `hooks/post_write_check.py` now dual-writes phase state: alongside the existing
+  memory-dir `workflow-state.json` mirror, every `workflow-state.md` write also mirrors
+  `current_phase`, `phase_state`, `pause_reason`, and `implementation_requested` into a
+  lightweight `.sdd-state.json` at the project root, so other tools can cheaply read
+  current phase without parsing markdown or resolving `~/.claude/sdd-memory/`. Purely
+  additive — the existing memory-dir write and its `hook_history` audit trail are
+  untouched. `.sdd-state.json` added to `.gitignore` as generated state.
+
+### Verified (no change needed)
+- Confirmed `design-author`'s `agent-nelly:nelly-orchestrator` usage is already a single
+  read (reused brief or one fresh call per the documented re-fetch triggers) followed by a
+  single write-back — the redundant pre-sweep call this would have collapsed was already
+  removed in 0.1.9.
+
 ## 0.1.9
 
 ### Changed
