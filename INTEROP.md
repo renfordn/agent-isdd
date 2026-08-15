@@ -135,7 +135,12 @@ discoveries worth persisting across future sessions — for example: interface a
 confirmed or denied during requirements, coverage gaps or unexpected interfaces found during
 design research, risk flags raised by `tdd-planner`. The criterion is "would a future
 conversation benefit from knowing this independently of this feature's own artifacts?" — ephemeral
-workflow state (user confirmed step N, phase advanced) never qualifies. If the call fails or
+workflow state (user confirmed step N, phase advanced) never qualifies. Choose the call shape by
+content: a positive discovery (a confirmed interface, a constraint, a risk) is a `new fact`/
+`new facts` batch; a discovery that a specific approach was tried and rejected (a design
+contradicted by a security finding, a task slice that had to be abandoned and resliced once the
+code was actually read) is an `error lesson` instead — a future session benefits more from being
+warned off the dead end than from a fact restating the final state. If the call fails or
 nelly is unavailable, log a one-line note in `recap.md` and continue — it is never a blocking
 condition. agent-nelly requires no changes to support this: `new facts` is already part of its
 standard call contract (see `agent-nelly`'s `INTEROP.md`).

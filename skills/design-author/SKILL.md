@@ -37,7 +37,9 @@ context:
    relevant entries already in the brief serve this purpose. After `planning-agent` returns,
    take its "Nelly summaries to write (if any)" output and persist it via
    `agent-nelly:nelly-orchestrator`'s `new fact`/`new facts` input — `planning-agent` itself
-   never writes it.
+   never writes it. If a specific summary describes a design approach already tried and rejected
+   in this codebase (not just a fact about its current shape), persist that one via
+   `error lesson` instead (see `INTEROP.md`'s "→ agent-nelly" section for the criterion).
 
 ## Design Gate
 

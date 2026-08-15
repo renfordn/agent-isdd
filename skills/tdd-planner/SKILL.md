@@ -21,6 +21,14 @@ re-research and slice directly from it. Before delegating, also check whether a 
 continuous stretch of phase work (per `spec-driven-development`'s extended brief-reuse
 convention and its three re-fetch triggers) and reuse it instead of re-delegating.
 
+When a fresh `planning-agent` delegation happens here (not reused from cache), take its "Nelly
+summaries to write (if any)" output and persist it via `agent-nelly:nelly-orchestrator`'s
+`new fact`/`new facts` input, the same way `design-author` does for its own `planning-agent`
+call — `planning-agent` itself never writes it. If a specific summary describes a task-slicing
+approach that had to be abandoned and resliced once the code was actually read (not just a fact
+about the current codebase shape), persist that one via `error lesson` instead (see
+`INTEROP.md`'s "→ agent-nelly" section for the criterion).
+
 ## Phase Model
 
 Reinforces Requirements → Design → Tasks. `Tasks` should be phased and small enough to support

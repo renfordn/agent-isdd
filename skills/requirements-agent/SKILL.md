@@ -49,6 +49,16 @@ draft.
 4. Present the changed draft, pause for user confirmation or edits.
 5. Only after confirmation, treat the requirements as approved input.
 
+`spec-reviewer` has no "Nelly summaries to write" output of its own, unlike `planning-agent` —
+this is deliberate, not an oversight. `planning-agent` researches the codebase and routinely
+surfaces durable, project-level facts (an interface, a constraint) independent of the feature
+being planned. `spec-reviewer` reviews caller-supplied requirement text for this one feature; its
+output (gaps, rewritten EARS sections) is almost always feature-scoped rather than durable across
+features. The rare exception (e.g. a source ticket assumes an interface that's since been
+deprecated project-wide) is still caught by the `after-requirements` hook's generic `new facts`/
+`error lesson` write-back — see `workflow-manager/SKILL.md`'s Lifecycle Hooks section — so nothing
+falls through; it just isn't eager like `planning-agent`'s per-call persist.
+
 ## Required Requirement Fields (both modes)
 
 Problem statement, user outcome, constraints, non-goals, edge cases, success criteria,

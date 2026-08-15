@@ -197,7 +197,11 @@ is `true`, call `agent-nelly:nelly-orchestrator` with a `new facts` batch of any
 discoveries from this phase — for example: interface assumptions confirmed or denied during the
 requirements interview, constraint conflicts found, non-goals that turned out load-bearing. Only
 include facts that would benefit a future conversation independently of this feature's own
-artifacts; ephemeral workflow state never qualifies. If the call fails, append a one-line note
+artifacts; ephemeral workflow state never qualifies. If a discovery instead describes a specific
+approach that was tried and rejected during this phase (not just a fact about the current state),
+call `error lesson` for that item instead of folding it into `new facts` — see `INTEROP.md`'s
+"→ agent-nelly" section for the full fact-vs-error-lesson criterion (this is a documentation
+pointer, not a duplicate definition). If the call fails, append a one-line note
 to `recap.md` and continue — never a blocking condition.
 
 ### `before-design`
@@ -235,9 +239,13 @@ the decision is `handoff`, additionally rely on `hooks/slice_spec_gate.py` — i
 hook does not need to re-verify Slice Spec completeness by hand.
 
 **Nelly write-back** (after Verification Step, only when advancing or handing off): same pattern
-as `after-requirements`. Facts worth persisting from Tasks: risk flags raised by `tdd-planner`,
-especially any `paused` blocker reasons that indicate a project-wide constraint or missing
-capability — these are the most likely to recur in future features.
+as `after-requirements`. Note: `tdd-planner` already persists `planning-agent`'s "Nelly summaries
+to write" (file-level findings from any fresh research it delegates) immediately after that
+research returns — do not duplicate those here. Facts worth persisting at this hook: risk flags
+raised by `tdd-planner`, especially any `paused` blocker reasons that indicate a project-wide
+constraint or missing capability — these are the most likely to recur in future features. A
+`paused` reason caused by a slicing approach that had to be abandoned and redone is an
+`error lesson` rather than a plain fact (see `after-requirements`'s write-back note).
 
 ## Recap-and-Drop
 
