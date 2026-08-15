@@ -84,14 +84,22 @@ entirely and resolution starts from `workflow-state.md`.
 - If unavailable, surface one plain notice to the user and continue the workflow without the
   Intent-alignment check — this is graceful degradation, never a blocking condition.
 
-### `workflow-state.md` Vs `workflow-state.json` Conflict Resolution
+### `workflow-state.md` Vs `workflow-state.json` — Write Responsibilities
 
-Dual-written on every phase transition. They must agree. When they disagree:
+`workflow-state.md` is the model-written file for all phase state. `workflow-state.json` has
+two tiers of fields with different owners:
 
-- `workflow-state.md` is always authoritative.
-- Repair `workflow-state.json` in place so its fields match `workflow-state.md`.
-- Log the repair as a one-line note in `recap.md`.
-- Never silently accept `workflow-state.json` as correct when it disagrees; never skip logging.
+- **Mirrored fields** (`current_phase`, `phase_state`, `pause_reason`,
+  `implementation_requested`): written exclusively by `hooks/post_write_check.py` after
+  every `workflow-state.md` write — never written by the model directly. The model writes
+  `workflow-state.md`; the hook syncs the JSON automatically. `workflow-state.md` is always
+  authoritative when they disagree.
+- **JSON-only fields** (`agent_nelly_available`, `hook_history`, `rollback_pending`,
+  `recap_path`, `blocked_fields`, …): written directly by the model or by whichever hook owns
+  them (e.g. `subagent_report.py` for `rollback_pending`). The hook does not touch these.
+
+On initial scaffold (`start`), create both files from the canonical templates; after that, only
+`workflow-state.md` needs updating for phase-state changes — the hook handles the rest.
 
 ## Scaffolding (folded from the former `artifact-scaffolder` skill)
 
@@ -162,7 +170,7 @@ current phase/task against the Intent in session context; no nelly spawn), detec
 stale/contradictory artifacts, repair if safe, decide the next action, write the result.
 
 **Verification Step**: before reporting this hook's decision as final, confirm `recap.md` and
-`hook_history` actually reflect it — if `state_consistency_check.py` already repaired drift for
+`hook_history` actually reflect it — if `post_write_check.py` already repaired drift for
 this write (see its `hook_history` entry), trust that as evidence rather than re-deriving it;
 otherwise check directly. If `recap.md` didn't change for a claimed state-changing decision,
 pause instead of continuing.
@@ -181,8 +189,16 @@ decide advance-to-Design vs. pause, record the outcome.
 
 **Verification Step**: before advancing, confirm `recap.md` actually changed and a
 `hook_history` entry exists for this transition — a script can verify the JSON/MD fields agree
-(`state_consistency_check.py`), but only this hook can judge whether `recap.md`'s content is
+(`post_write_check.py`), but only this hook can judge whether `recap.md`'s content is
 meaningful, not just present. If either check fails, pause rather than advance.
+
+**Nelly write-back** (after Verification Step, only when advancing): if `agent_nelly_available`
+is `true`, call `agent-nelly:nelly-orchestrator` with a `new facts` batch of any project-level
+discoveries from this phase — for example: interface assumptions confirmed or denied during the
+requirements interview, constraint conflicts found, non-goals that turned out load-bearing. Only
+include facts that would benefit a future conversation independently of this feature's own
+artifacts; ephemeral workflow state never qualifies. If the call fails, append a one-line note
+to `recap.md` and continue — never a blocking condition.
 
 ### `before-design`
 
@@ -197,6 +213,15 @@ advance-to-Tasks vs. pause, record the outcome.
 **Verification Step**: same check as `after-requirements` — confirm `recap.md` changed and a
 `hook_history` entry exists before advancing; pause otherwise.
 
+**Nelly write-back** (after Verification Step, only when advancing): same pattern as
+`after-requirements`. Note: `design-author` already persists `planning-agent`'s "Nelly summaries
+to write" (coverage gaps, unexpected interfaces, file-level findings) immediately after research
+— do not duplicate those here. Facts worth persisting at this hook are design-gate discoveries
+not covered by that write-back: tradeoff decisions made during design authoring, scope choices
+between equivalent approaches, risk-classification calls (e.g. a risk promoted from
+feature-specific to project-wide during design review), or architectural constraints surfaced
+during the Phase Completion checklist evaluation rather than during research.
+
 ### `after-tasks`
 
 Evaluate the `Tasks` completion checklist, update `workflow-state.md` and `recap.md`, decide
@@ -208,6 +233,11 @@ before setting `Current Phase: Implementation`.
 the decision is `handoff`, additionally rely on `hooks/slice_spec_gate.py` — it hard-denies the
 `agent-tdd` spawn itself if the constructed Slice Spec is missing a required field, so this
 hook does not need to re-verify Slice Spec completeness by hand.
+
+**Nelly write-back** (after Verification Step, only when advancing or handing off): same pattern
+as `after-requirements`. Facts worth persisting from Tasks: risk flags raised by `tdd-planner`,
+especially any `paused` blocker reasons that indicate a project-wide constraint or missing
+capability — these are the most likely to recur in future features.
 
 ## Recap-and-Drop
 
@@ -400,7 +430,7 @@ The breadcrumb is rendered inline by the calling skill for status responses, and
 Visible Progress section); the `TaskCreate`/`TaskUpdate`/`TaskList` checklist is never
 `agent-ux:ux-agent`'s job either way — it cannot reach those from its subagent context (see
 `agent-ux:ux-agent`). Call `TaskCreate`/`TaskUpdate`/`TaskList` directly, self-loaded via
-`ToolSearch` first. `hooks/phase_task_sync.py` fires a reminder on every
+`ToolSearch` first. `hooks/post_write_check.py` fires a reminder on every
 `workflow-state.md`/`tasks.md` write as a backstop — on that reminder, sync the checklist
 directly rather than delegating to `agent-ux:ux-agent`.
 

@@ -17,11 +17,11 @@ specific design question), the feature folder path, and — when available (per
 brief to skip re-deriving context it already gives you (known ownership, prior architecture
 decisions, known tech debt in the touched area).
 
-The caller may also pass down file-relevance hits for candidate files, sourced from a
-caller-side `agent-nelly:nelly-orchestrator` call with `target files` and `surface relevant
-memory` set (a pre-sweep the caller runs before delegating to you, not something you call
-yourself — you have no nelly tool access). Treat those hits the same way you treat the brief:
-as context to skip re-deriving, not noise to restate.
+The caller may also pass down relevant entries from the nelly brief, sourced from the
+orchestrator's pre-Design `agent-nelly:nelly-orchestrator` call (fetched with
+`surface relevant memory: true` — see `spec-driven-development/SKILL.md`'s Goal-Aware Memory
+section). Treat those entries the same way you treat the brief: as context to skip
+re-deriving, not noise to restate. You have no nelly tool access yourself.
 
 ## Pass 1 — wide, fast
 

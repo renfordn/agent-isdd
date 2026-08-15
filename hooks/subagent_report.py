@@ -62,36 +62,50 @@ def _append_pending_rollback_line(state_md_path, target, reason):
         pass
 
 
-def extract_last_assistant_text(transcript_path):
-    blocks = []
+def extract_last_assistant_text(transcript_path, tail_bytes=16384):
+    """Read only the tail of the transcript to find the last assistant message.
+    SDD subagent reports are always the terminal output; reading the full JSONL
+    file is wasteful for large transcripts. 16 KB comfortably covers any report.
+    """
     try:
-        with open(transcript_path, "r", encoding="utf-8") as fh:
-            for line in fh:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    ev = json.loads(line)
-                except (json.JSONDecodeError, ValueError):
-                    continue
-                if not isinstance(ev, dict):
-                    continue
-                msg = ev.get("message") if isinstance(ev.get("message"), dict) else None
-                role = ev.get("type") or (msg.get("role") if msg else "")
-                is_assistant = role == "assistant" or (msg and msg.get("role") == "assistant")
-                if not is_assistant:
-                    continue
-                content = msg.get("content") if msg else ev.get("content")
-                if isinstance(content, str):
-                    blocks.append(content)
-                elif isinstance(content, list):
-                    parts = [c.get("text", "") for c in content
-                             if isinstance(c, dict) and c.get("type") == "text"]
-                    joined = "\n".join(p for p in parts if p)
-                    if joined:
-                        blocks.append(joined)
+        with open(transcript_path, "rb") as fh:
+            fh.seek(0, 2)
+            size = fh.tell()
+            start = max(0, size - tail_bytes)
+            fh.seek(start)
+            raw = fh.read()
     except OSError:
         return ""
+
+    lines = raw.split(b"\n")
+    if start > 0:
+        lines = lines[1:]  # drop potentially partial first line caused by mid-line seek
+
+    blocks = []
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            ev = json.loads(line)
+        except (json.JSONDecodeError, ValueError):
+            continue
+        if not isinstance(ev, dict):
+            continue
+        msg = ev.get("message") if isinstance(ev.get("message"), dict) else None
+        role = ev.get("type") or (msg.get("role") if msg else "")
+        is_assistant = role == "assistant" or (msg and msg.get("role") == "assistant")
+        if not is_assistant:
+            continue
+        content = msg.get("content") if msg else ev.get("content")
+        if isinstance(content, str):
+            blocks.append(content)
+        elif isinstance(content, list):
+            parts = [c.get("text", "") for c in content
+                     if isinstance(c, dict) and c.get("type") == "text"]
+            joined = "\n".join(p for p in parts if p)
+            if joined:
+                blocks.append(joined)
     return blocks[-1].strip() if blocks else ""
 
 

@@ -49,11 +49,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/phase_task_sync.py\""
-          },
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/state_consistency_check.py\""
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/post_write_check.py\""
           }
         ]
       }

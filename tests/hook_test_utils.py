@@ -74,7 +74,7 @@ def run_hook(name, payload, cwd=None, env_extra=None, timeout=10):
 
 def run_hook_message(name, payload, cwd=None, env_extra=None, timeout=10):
     """Like run_hook(), but for the hook family that emits {"systemMessage": ...} rather than
-    {"hookSpecificOutput": {"permissionDecision": ...}} -- phase_task_sync.py, stop_check.py,
+    {"hookSpecificOutput": {"permissionDecision": ...}} -- post_write_check.py, stop_check.py,
     precompact_snapshot.py, subagent_report.py. Two distinct response shapes exist in this
     codebase (permission-decision hooks vs. informational-reminder hooks); this plugin's own
     hooks already split cleanly along that line, so two narrow helpers stay clearer than one

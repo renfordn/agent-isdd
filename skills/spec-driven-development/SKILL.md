@@ -85,6 +85,12 @@ Intent-alignment check) instead of reading `~/.claude/sdd-memory/` files directl
 an Intent-alignment concern, surface it to the user before proceeding — don't silently continue
 past a stated drift.
 
+When the next phase is **Design**, include `surface relevant memory: true` in the nelly call so
+the brief's `Relevant entries` section is populated. `design-author` passes those entries to
+`planning-agent` in place of the former separate pre-sweep nelly call — no second nelly spawn
+needed. For other phases, `surface relevant memory` is not required unless you have a specific
+reason to request it.
+
 This skill is the single fetch/delegation point, per continuous stretch of phase work, for the
 nelly brief **and** for `planning-agent`/`spec-reviewer` findings still valid from earlier in
 that same stretch (e.g. a `planning-agent` finding produced during Design that `tdd-planner`
@@ -119,6 +125,11 @@ call outside this dedup pool — see its Goal Field Contract section; it is neve
 reusing a cached brief. The `before-continue` Intent-alignment check no longer spawns a nelly
 subagent — it runs inline against the Intent already in session context (see
 `workflow-manager/SKILL.md`'s Goal Field Contract).
+
+**Memory write-back at phase boundaries**: at each `after-*` hook, this skill performs the
+nelly write-back call directly, following the contract defined in `workflow-manager`'s Lifecycle
+Hooks section (which owns the rule, not the call itself — see its ownership note). The
+criterion and graceful-degradation rules are defined in `INTEROP.md`'s "→ agent-nelly" section.
 
 ## Start Protocol
 
@@ -217,8 +228,11 @@ Contracts And Interfaces, and an optional `agent-nelly` Pre-Slice Brief).
    batch. One call only — no re-fetch of the brief needed.
 5. Do not resume, monitor, or drive `agent-TDD` past this initial spawn — anything after its
    own Green→Refactor review pause is outside this skill's scope.
-6. If `agent-tdd` (or `agent-nelly` for the Pre-Slice Brief) is not installed, pause with a
-   concrete, actionable message rather than attempting the work internally.
+6. Before spawning, check the session's `<system-reminder>` agent-types block for
+   `agent-tdd:agent-TDD`. If absent, pause with a concrete, actionable message (e.g. "agent-tdd
+   is not installed in this session — install it before requesting implementation") rather than
+   attempting the work internally. (agent-nelly unavailability is already handled by
+   `workflow-manager`'s Availability Check at session start.)
 
 ## Requirements Gate
 
