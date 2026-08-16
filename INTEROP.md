@@ -52,32 +52,46 @@ Sometimes `agent-tdd`'s Green→Refactor review pause (or `code-reviewer`) disco
 *task* itself — not just the implementation — was wrong. There is no cross-plugin IPC to build
 a live push channel for this, so the return path is a documented marker convention plus a
 check `agent-isdd` performs on its own re-entry, not agent-isdd reaching into `agent-tdd`'s
-active loop.
+active loop. Two genuinely different marker formats feed two different paths below — this used
+to be documented as one marker with two delivery paths, which was wrong: `agent-tdd` never emits
+SDD-specific vocabulary (see its own `INTEROP.md`), so it cannot literally emit the human-relay
+marker below itself. That was a real gap, not just a documentation gap — closed by giving
+`agent-tdd` its own generic marker instead of assuming it would speak agent-isdd's.
 
-**Marker format**, emitted as a line in the reporting agent's final report:
+**Automatic path** (agent-tdd's own generic signal): `agent-tdd`'s **Plan Validity Flag** (see
+`agent-tdd/INTEROP.md`'s section of the same name) is a caller-agnostic marker —
+`<!--AGENT-TDD-PLAN-FLAG:reason="..."-->` — with no target phase, since `agent-tdd` has no
+concept of agent-isdd's phase vocabulary. When `agent-tdd:agent-TDD`'s spawn report contains it,
+`hooks/subagent_report.py`'s `SubagentStop` handler recognizes it (independently of its normal
+narrative-report capture, which excludes implementation-phase reports otherwise), defaults the
+rewind target to `Requirements` — per `references/rollback-guide.md`'s existing "Which target
+phase to name" policy: an unclear or absent target defaults to the more conservative (earlier)
+phase, since it's always safer to re-confirm a phase that may have been fine than to skip past
+one that actually needs revision — and writes `rollback_pending` to `workflow-state.json` plus a
+`Pending Rollback Request` line to `workflow-state.md`, with the reason text tagged so a later
+reader (or `workflow-manager`'s own "Rollback Request Intake," which reads the reason and can
+re-target forward per its documented rule) knows `Requirements` was defaulted, not derived from
+the reason. The next `before-continue` hook checks for it first and routes into the Rewind
+Contract.
+
+**Human-relay path** (agent-isdd's own vocabulary, for a human relaying a finding): a human (or
+whichever context is driving) who already knows agent-isdd's phase names can paste this marker
+directly into a message re-entering agent-isdd:
 
 ```
 <!--SDD-ROLLBACK-REQUEST: target=<Requirements|Design|Tasks> reason="..."-->
 ```
 
-**Automatic path**: when `agent-tdd:agent-TDD`'s (or `agent-tdd:test-author`'s) *initial* spawn
-report contains this marker, `hooks/subagent_report.py`'s `SubagentStop` handler recognizes it
-(independently of its normal narrative-report capture, which explicitly excludes
-implementation-phase reports) and writes `rollback_pending` to `workflow-state.json` plus a
-`Pending Rollback Request` line to `workflow-state.md`. The next `before-continue` hook
-(`workflow-manager`'s "Rollback Request Intake") checks for it first and routes into the
-Rewind Contract automatically.
+`before-continue` recognizes it in user input the same way, when present — this is the path for
+`code-reviewer`'s findings, or any `agent-tdd` resume happening via `SendMessage` in a session
+agent-isdd isn't part of, since neither has an automatic hook of its own. For step-by-step
+instructions on both paths, see [`references/rollback-guide.md`](references/rollback-guide.md).
 
-**Human-relay path**: this only works when agent-isdd is present in the same session as the
-`SubagentStop` event. `code-reviewer`'s findings, and any `agent-tdd` resume happening via
-`SendMessage` in a session agent-isdd isn't part of, have no automatic hook — the marker text
-is meant to be relayed by a human (or by whichever context is driving) directly into a message
-to agent-isdd, which `before-continue` also recognizes when present in user input. For
-step-by-step instructions on both paths, see
-[`references/rollback-guide.md`](references/rollback-guide.md).
-
-Do not treat this as a fully automatic guarantee: it is automatic exactly where a
-`SubagentStop` can observe the report, and human-relay everywhere else.
+Do not treat either path as a fully automatic guarantee on its own: the automatic path only
+fires when `agent-tdd` actually raises a Plan Validity Flag on its *initial* spawn report (not
+on a later `SendMessage` resume, which this hook does not observe), and only ever targets
+`Requirements` by default — human-relay remains the only path with an explicit target, and the
+only path for `code-reviewer` altogether.
 
 ## → code-reviewer (review gate)
 

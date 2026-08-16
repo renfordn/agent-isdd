@@ -73,8 +73,10 @@ Cleanup's Phases 3-7 were actually carried out by hand.
 
 ## Visual Review — deliberate override of code-reviewer's threshold
 
-`code-reviewer`'s rule: open a `ux-agent` review-dashboard Artifact above 5 findings or more
-than 1 touched file. This skill is *inherently* multi-file by design (see Scope above), so
+`code-reviewer`'s rule (its `SKILL.md`'s "Visual Review" section — the canonical definition,
+also mirrored by `agent-ux`'s `ux-conventions.md`/`ux-agent.md` for its own separate
+`review_threshold` event): open a review-dashboard Artifact above 5 findings or more than 1
+touched file. This skill is *inherently* multi-file by design (see Scope above), so
 applying that rule literally would make the dashboard Artifact the default rendering for every
 single commit attempt — heavyweight for a background gate, not an interactive review session.
 

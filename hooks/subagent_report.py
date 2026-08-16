@@ -29,9 +29,10 @@ SDD_MARKERS = re.compile(
 # can't be coincidentally triggered by unrelated natural-language text.
 EXPLICIT_MARKER = re.compile(r"<!--SDD-REPORT:(tdd-planner|spec-reviewer)-->")
 
-# Rollback-request marker per INTEROP.md's "<- agent-tdd / code-reviewer (rollback
-# request)" convention: agent-tdd's Green->Refactor review-pause report emits this when it
-# concludes the *task*, not just the code, was wrong. Recognized independently of
+# Human-relay rollback marker per INTEROP.md's "<- agent-tdd / code-reviewer (rollback
+# request)" convention: a human (or whichever context is driving) pastes this directly into a
+# message re-entering agent-isdd, naming agent-isdd's own phase vocabulary explicitly since a
+# human relaying a code-reviewer finding can reasonably know it. Recognized independently of
 # is_sdd_report -- agent-TDD/test-author's own narrative reports are otherwise explicitly
 # out of scope for this hook (see module docstring), but this structural marker is a
 # distinct, explicit signal crossing back into agent-isdd's territory, not a narrative
@@ -40,17 +41,45 @@ ROLLBACK_MARKER = re.compile(
     r'<!--SDD-ROLLBACK-REQUEST:\s*target=(Requirements|Design|Tasks)\s+reason="([^"]*)"-->'
 )
 
+# Automatic path: agent-tdd's own generic, caller-agnostic Plan Validity Flag marker (see
+# agent-tdd/INTEROP.md's "Plan Validity Flag" section) -- agent-TDD never knows agent-isdd's
+# phase vocabulary, so it carries a reason only, no target. This hook defaults the target to
+# "Requirements" -- per references/rollback-guide.md's already-established "Which target phase
+# to name" policy, an unclear/absent target defaults to the more conservative (earlier) phase,
+# since it's always safer to re-confirm a phase that may have been fine than to skip past one
+# that actually needs revision -- and prefixes the reason so workflow-manager's "Rollback
+# Request Intake" contract, which already reads the reason text and re-derives the target
+# rather than trusting a stored value blindly, can re-target forward (to Design or Tasks) if
+# the reason clearly indicates a narrower problem instead.
+PLAN_FLAG_MARKER = re.compile(r'<!--AGENT-TDD-PLAN-FLAG:\s*reason="([^"]*)"-->')
+
 
 def is_sdd_report(text):
     return bool(EXPLICIT_MARKER.search(text) or SDD_MARKERS.search(text))
 
 
 def extract_rollback_request(text):
-    """Return {"target": ..., "reason": ...} if text contains a rollback marker, else None."""
+    """Return {"target": ..., "reason": ...} from a human-relayed marker, else None."""
     m = ROLLBACK_MARKER.search(text)
     if not m:
         return None
     return {"target": m.group(1), "reason": m.group(2)}
+
+
+def extract_plan_validity_flag(text):
+    """Return {"target": ..., "reason": ...} from agent-tdd's own automatic marker, else None.
+
+    Target always defaults to "Requirements" here -- see the PLAN_FLAG_MARKER comment above.
+    """
+    m = PLAN_FLAG_MARKER.search(text)
+    if not m:
+        return None
+    reason = m.group(1)
+    return {
+        "target": "Requirements",
+        "reason": f"[agent-tdd Plan Validity Flag, target defaulted to Requirements (most "
+                   f"conservative) -- re-evaluate against reason] {reason}",
+    }
 
 
 def _append_pending_rollback_line(state_md_path, target, reason):
@@ -126,7 +155,10 @@ def main():
 
     feature_dir = os.path.dirname(state)
 
-    rollback = extract_rollback_request(report)
+    # Human-relay marker takes priority if somehow both are present in the same report --
+    # it names an explicit target, which is strictly more information than the automatic
+    # marker's defaulted one.
+    rollback = extract_rollback_request(report) or extract_plan_validity_flag(report)
     if rollback:
         json_path = os.path.join(feature_dir, "workflow-state.json")
         write_rollback_pending(json_path, rollback["target"], rollback["reason"], "agent-tdd")

@@ -187,6 +187,65 @@ class SubagentReportTests(unittest.TestCase):
                 state = json.load(fh)
             self.assertNotIn("rollback_pending", state)
 
+    def test_plan_validity_flag_marker_writes_rollback_pending_defaulted_to_requirements(self):
+        with h.temp_git_repo() as repo, h.temp_home() as home:
+            feature_dir = h.feature_spec_dir(home, repo)
+            h.seed_state_file(feature_dir, title="My Feature", workflow_status="In Progress")
+            json_path = os.path.join(feature_dir, "workflow-state.json")
+            with open(json_path, "w", encoding="utf-8") as fh:
+                json.dump({"current_phase": "Implementation"}, fh)
+            transcript = os.path.join(home, "transcript.jsonl")
+            _write_transcript(
+                transcript,
+                [_assistant_line(
+                    "<!--AGENT-TDD-REPORT-->\n<!--AGENT-TDD-PHASE:green_pause-->\n"
+                    '<!--AGENT-TDD-PLAN-FLAG:reason="acceptance criteria contradicts existing '
+                    'tested behavior"-->\nGreen work surfaced a conflict."'
+                )],
+            )
+            msg, rc = h.run_hook_message(
+                "subagent_report.py",
+                {"cwd": repo, "transcript_path": transcript},
+                env_extra={"HOME": home},
+            )
+            self.assertEqual(rc, 0)
+            self.assertIsNotNone(msg)
+
+            with open(json_path) as fh:
+                state = json.load(fh)
+            self.assertEqual(state["rollback_pending"]["target"], "Requirements")
+            self.assertIn(
+                "acceptance criteria contradicts existing tested behavior",
+                state["rollback_pending"]["reason"],
+            )
+            self.assertEqual(state["rollback_pending"]["source"], "agent-tdd")
+
+    def test_agent_tdd_report_without_plan_flag_is_not_treated_as_rollback(self):
+        with h.temp_git_repo() as repo, h.temp_home() as home:
+            feature_dir = h.feature_spec_dir(home, repo)
+            h.seed_state_file(feature_dir, title="My Feature", workflow_status="In Progress")
+            json_path = os.path.join(feature_dir, "workflow-state.json")
+            with open(json_path, "w", encoding="utf-8") as fh:
+                json.dump({"current_phase": "Implementation"}, fh)
+            transcript = os.path.join(home, "transcript.jsonl")
+            _write_transcript(
+                transcript,
+                [_assistant_line(
+                    "<!--AGENT-TDD-REPORT-->\n<!--AGENT-TDD-PHASE:green_pause-->\n"
+                    "Implemented the counter reset behavior with a targeted unit test."
+                )],
+            )
+            msg, rc = h.run_hook_message(
+                "subagent_report.py",
+                {"cwd": repo, "transcript_path": transcript},
+                env_extra={"HOME": home},
+            )
+            self.assertEqual(rc, 0)
+            self.assertIsNone(msg)
+            with open(json_path) as fh:
+                state = json.load(fh)
+            self.assertNotIn("rollback_pending", state)
+
     def test_rollback_marker_without_active_state_is_silent(self):
         with h.temp_git_repo() as repo, h.temp_home() as home:
             transcript = os.path.join(home, "transcript.jsonl")

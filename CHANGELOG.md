@@ -1,5 +1,42 @@
 # Changelog
 
+## 0.1.12
+
+### Changed
+- Token-efficiency rework of `skills/workflow-manager/SKILL.md` (3,739 → 3,277 words, -12.4%),
+  following this plugin's own established pattern of structure-and-reuse rather than cutting
+  content (see 0.1.6 below). The five parallel "Choose X when / On choosing" sections (Start,
+  Continue, Pause, Handoff, Complete Rules) collapsed into one `Action Rules` table; the three
+  Phase Pass/Fail sections collapsed into one table; the six Lifecycle Hooks collapsed into one
+  table with the (already near-verbatim-duplicated) Verification Step / Nelly write-back rules
+  stated once above it instead of restated per hook; `Required Decisions` folded into `Phase
+  Completion Evaluation`. Every original rule verified still present, section-by-section, against
+  the pre-edit version — nothing cut, only restructured. Confirmed no other file in the plugin
+  references the merged section names.
+- `skills/doc-consistency-auditor/SKILL.md`'s "Visual Review" section: fixed a conflation in its
+  citation of `code-reviewer`'s threshold rule — it read as if `code-reviewer` opens a `ux-agent`
+  review-dashboard Artifact, when `code-reviewer` actually opens its own Artifact directly (no
+  `agent-ux` dependency, at the time this was written). Now cites `code-reviewer/SKILL.md`'s
+  "Visual Review" section as the canonical definition, mirrored (not duplicated independently) by
+  `agent-ux`'s own `ux-conventions.md`/`ux-agent.md` for its separate `review_threshold` event —
+  closing a three-way duplication of the same 5-finding/1-file number with no shared source.
+
+### Fixed
+- The automatic rollback path documented in `INTEROP.md`/`references/rollback-guide.md` never
+  actually worked: `hooks/subagent_report.py` watched for `<!--SDD-ROLLBACK-REQUEST:...-->`, but
+  `agent-tdd` — a deliberately caller-agnostic plugin — never emitted that SDD-specific marker
+  and never could without violating its own genericity contract. Fixed by having `agent-tdd`
+  emit its own generic `<!--AGENT-TDD-PLAN-FLAG:reason="..."-->` marker instead (new in
+  `agent-tdd`'s own release), which `hooks/subagent_report.py` now recognizes as a second,
+  independent trigger: defaults the rewind target to `Requirements` (per
+  `rollback-guide.md`'s pre-existing "more conservative (earlier) phase" policy, since the
+  marker carries a reason but no target) and writes `rollback_pending` exactly as the
+  human-relay path already did. The human-relay path (`<!--SDD-ROLLBACK-REQUEST:...-->`, for a
+  human who already knows agent-isdd's phase vocabulary, and the only path for `code-reviewer`)
+  is unchanged. `INTEROP.md` and `references/rollback-guide.md` rewritten to describe both real
+  paths instead of one real path and one that could never fire. New tests in
+  `tests/test_subagent_report.py` cover the new marker.
+
 ## 0.1.10
 
 ### Added
