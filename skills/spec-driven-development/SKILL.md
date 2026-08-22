@@ -125,10 +125,10 @@ None of the three triggers assumed brief-specific semantics that fail to hold fo
 `planning-agent`/`spec-reviewer` finding — re-verified as part of extending this rule's scope,
 per design.md's mitigation for the correctness risk this generalization raises.
 
-When delegating into `workflow-manager`, `design-author`, or `tdd-planner`, pass along the
+When delegating into `workflow-manager` or `design-author`, pass along the
 already-fetched brief and any still-valid finding explicitly rather than letting any of them
-re-derive or re-fetch on their own; `design-author` and `tdd-planner` check for a still-valid
-cached finding before re-delegating to `planning-agent`, mirroring how they already check for a
+re-derive or re-fetch on their own; `design-author` checks for a still-valid
+cached finding before re-delegating to `research-consolidator`, mirroring how it already checks for a
 reusable agent-nelly brief. `workflow-manager`'s own `start`-time Goal-seeding call is a distinct-purpose, always-fresh
 call outside this dedup pool — see its Goal Field Contract section; it is never satisfied by
 reusing a cached brief. The `before-continue` Intent-alignment check no longer spawns a nelly
@@ -187,9 +187,8 @@ unless requirement changes invalidate the design or tasks.
 Use focused skills internally rather than asking the user to switch prompts:
 - `workflow-manager` — orchestration, phase detection, state repair, transitions, scaffolding.
 - `requirements-agent` — requirements from scratch or from an existing draft/ticket/PRD.
-- `design-author` — design, informed by `planning-agent` research and `agent-nelly:nelly-
+- `design-author` — design, informed by `research-consolidator` and `agent-nelly:nelly-
   orchestrator` (when available).
-- `tdd-planner` — phased execution tasks, also informed by `planning-agent`.
 
 Only expose these skill names when the user explicitly asks which one is being used, wants to
 invoke one directly, or a pause message needs to explain which capability produced the output.
