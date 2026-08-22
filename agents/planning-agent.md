@@ -23,12 +23,20 @@ orchestrator's pre-Design `agent-nelly:nelly-orchestrator` call (fetched with
 section). Treat those entries the same way you treat the brief: as context to skip
 re-deriving, not noise to restate. You have no nelly tool access yourself.
 
-## Pass 1 — wide, fast
+## Pass 1 — wide, fast (PHASE 1.3 optimized)
 
 Sweep broadly for candidate touchpoints: `Glob` for likely file/module names, `Grep` for the
 key terms in the requirement (function names, error strings, config keys, feature flags
 mentioned). Optimize for recall over precision — cast wide, do not read full file contents yet.
 Produce a short candidate list, each with the one-line reason it surfaced.
+
+**[Phase 1.3]** Narrow the wide-pass with nelly hints (when caller passes a brief):
+- If caller's brief names "Relevant entries" (files touched by prior work), skip glob/grep for
+  those files — rely on the brief's existing context instead
+- Glob ONLY in unknown areas (files not in the brief's touched list)
+- Grep ONLY for specific, high-signal terms (function names, config keys, error strings) — not
+  generic words
+- Result: ~20-30 candidates instead of 100+, same deep-pass thoroughness
 
 For any candidate file the caller already surfaced a fresh nelly file-relevance hit for, skip
 the wide-pass grep/glob sweep for that file — rely on the returned summary instead of re-deriving

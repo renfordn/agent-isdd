@@ -13,6 +13,37 @@ Feature root:
 <sdd-memory-dir>/spec/<YYYY-MM-DD-feature-slug>/
 ```
 
+## `intent/intent.md`
+
+```md
+# Intent: <feature title>
+
+## Project Intent
+
+<From `agent-nelly:nelly-orchestrator` stored Intent, or "not yet captured">
+
+## Feature Goal
+
+<One line: derived from project Intent, describes what this feature achieves for the user>
+
+## Success Signals
+
+- <Observable signal 1: how you'll know this succeeded>
+- <Observable signal 2: measurable outcome>
+
+## Anti-Patterns
+
+- <What would indicate failure or misalignment>
+
+## Intent Anchor
+
+- ID: <SHA256 hash of this file's content — used for drift detection>
+- Generated: <YYYY-MM-DDTHH:MM:SSZ>
+
+```
+
+Used by `workflow-manager` at start to seed feature `Goal` field and track alignment throughout Requirements → Design → Implementation. All downstream specs reference this anchor; Intent drift is detected by hash mismatch.
+
 ## `workflow-state.md`
 
 ```md
@@ -23,11 +54,13 @@ Feature root:
 - Title: <feature title>
 - Slug: <YYYY-MM-DD-feature-slug>
 - Goal: <one line — the user's actual objective for this feature, seeded from `agent-nelly:nelly-orchestrator`'s stored Intent at start if available, otherwise from the user; not the same as the problem statement>
+- Intent Hash: <anchor ID from intent.md, used for drift detection>
+- Intent Alignment Status: <aligned | drift | unreviewed>
 
 ## Current State
 
-- Current Phase: <Requirements | Design | Tasks | Implementation | Complete>
-- Previous Phase: <None | Requirements | Design | Tasks | Implementation>
+- Current Phase: <Requirements | Design | Implementation | Complete>
+- Previous Phase: <None | Requirements | Design | Implementation>
 - Workflow Status: <In Progress | Blocked | Awaiting Confirmation | Awaiting Implementation Request | Complete>
 - Pause Reason: <None | blocker | confirmation required | waiting for implementation request>
 - Next Action: <next concrete workflow step>
@@ -353,7 +386,7 @@ Repeat the same structure for each phase.
 
 ## Current Phase
 
-- <Requirements | Design | Tasks | Implementation>
+- <Requirements | Design | Implementation>
 
 ## Workflow Status
 
@@ -364,8 +397,7 @@ Repeat the same structure for each phase.
 
 - [ ] Requirements
 - [ ] Design
-- [ ] Tasks
-- [ ] Implementation
+- [ ] Implementation (includes task slicing + Red-Green-Refactor, owned by agent-tdd)
 
 ## Open Items
 
@@ -386,6 +418,8 @@ Repeat the same structure for each phase.
 ## Goal Alignment Notes
 
 - <any `agent-nelly:nelly-orchestrator` goal-alignment flag raised during this feature, and how it was resolved>
+- **[Phase 1.1]** Intent drift detected: <hash comparison: old hash vs. new hash; why it changed; how it was addressed>
+- Alignment Status: aligned | drift | unreviewed
 
 ## Next Task
 

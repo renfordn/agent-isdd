@@ -85,6 +85,12 @@ Relevant entries, Intent alignment, Written) instead of reading `~/.claude/sdd-m
 directly. If it flags an Intent-alignment concern, surface it to the user before proceeding —
 don't silently continue past a stated drift.
 
+**[Phase 1.2] Brief caching:** On workflow resume (`before-continue`), check if a cached nelly
+brief exists in `workflow-state.json`'s `nelly_brief_cache` field:
+- If cached brief is valid (Intent Hash matches + timestamp < 24h old): reuse cached brief, no fetch
+- If cached brief is invalid (Intent Hash mismatch OR timestamp stale): fetch fresh brief, update cache
+- If no cached brief: fetch fresh brief, cache it
+
 When the next phase is **Design**, include `surface relevant memory: true` in the nelly call so
 the brief's `Relevant entries` section is populated. `design-author` passes those entries to
 `planning-agent` in place of the former separate pre-sweep nelly call — no second nelly spawn
@@ -93,24 +99,27 @@ reason to request it.
 
 This skill is the single fetch/delegation point, per continuous stretch of phase work, for the
 nelly brief **and** for `planning-agent`/`spec-reviewer` findings still valid from earlier in
-that same stretch (e.g. a `planning-agent` finding produced during Design that `tdd-planner`
-would otherwise re-request during Tasks). When a brief or finding has already been fetched this
-session and is still visible in context, reuse it rather than re-calling
-`agent-nelly:nelly-orchestrator`/`planning-agent`/`spec-reviewer` again for the same content.
-Re-fetch only when one of these triggers applies — identical rule, same three triggers, now
-scoped to a wider set of cached content, not a new or looser rule:
+that same stretch (e.g. a `planning-agent` finding produced during Design). When a brief or
+finding has already been fetched this session and is still visible in context, reuse it rather
+than re-calling `agent-nelly:nelly-orchestrator`/`planning-agent`/`spec-reviewer` again for the
+same content. Re-fetch only when one of these triggers applies — identical rule, same three
+triggers, now scoped to a wider set of cached content, not a new or looser rule:
 
 1. No prior brief or finding is visible in context (a new session, or context was compacted
-   since the last fetch). Applies identically to a `planning-agent`/`spec-reviewer` finding: if
-   it isn't visible, it isn't reusable.
+   since the last fetch) **and** no persistent cache exists in `workflow-state.json`. If persistent
+   cache exists and is valid, reuse it instead of fetching. Applies identically to a
+   `planning-agent`/`spec-reviewer` finding: if it isn't visible in context and no persistent
+   cache is valid, it isn't reusable.
 2. A rewind (Rewind Contract) or a Mid-Phase Change Classification happened since the cached
    brief/finding was fetched — both live in `workflow-manager`'s `SKILL.md`. A rewind or
    mid-phase change can invalidate a cached codebase finding exactly as it can invalidate a
-   brief, since either can change what "the current design/task" even means.
+   brief, since either can change what "the current design/task" even means. **[Phase 1.2]** Also
+   invalidates persistent cache; clear `nelly_brief_cache` from `workflow-state.json`.
 3. `workflow-manager`'s `before-continue` Intent-alignment check flagged a divergence since the
    cached brief/finding was fetched. When this fires, treat every cached item (brief and any
    `planning-agent`/`spec-reviewer` finding alike) as invalidated, not only the brief — an
    Intent-level divergence is a signal about the whole stretch of work, not brief-specific.
+   **[Phase 1.2]** Clear persistent cache on Intent drift.
 
 None of the three triggers assumed brief-specific semantics that fail to hold for a
 `planning-agent`/`spec-reviewer` finding — re-verified as part of extending this rule's scope,
@@ -134,19 +143,27 @@ criterion and graceful-degradation rules are defined in `INTEROP.md`'s "→ agen
 ## Start Protocol
 
 1. Use `workflow-manager` to identify or derive the feature title and slug, and to scaffold or
-   locate the per-feature artifact structure.
+   locate the per-feature artifact structure (including `intent/` directory).
 2. If `agent-nelly:nelly-orchestrator` is available, call it to read the project's stored
    Intent and seed the feature's `Goal` field in `workflow-state.md` from it when Intent is more
    specific than "not yet captured". Otherwise ask the user for the Goal directly.
-3. Initialize `workflow-state.md` with `Current Phase: Requirements` and `recap.md` to match.
-4. Route into `requirements-agent`: it interviews from scratch when the input is vague, or
+3. **[NEW Phase 1.1]** Create `intent/intent.md` with:
+   - Project Intent (from agent-nelly brief, or "not yet captured")
+   - Feature Goal (seeded from step 2)
+   - Success Signals (brief, 2-3 observable outcomes)
+   - Anti-Patterns (failure indicators)
+   - Intent Anchor: compute SHA256 hash of intent.md content
+4. Update `workflow-state.md` with:
+   - `Intent Hash: <anchor>`
+   - `Intent Alignment Status: unreviewed`
+5. Initialize `workflow-state.md` with `Current Phase: Requirements` and `recap.md` to match.
+6. Route into `requirements-agent`: it interviews from scratch when the input is vague, or
    reviews-and-rewrites when the user hands over an existing ticket/PRD/draft — one skill, two
    entry modes, same gate.
-5. After Requirements are approved, continue automatically into `Design` (`design-author`).
-6. After Design is approved, continue automatically into `Tasks` (`tdd-planner`).
-7. After Tasks are ready, stop with a clear handoff message, or perform the one-directional
-   `agent-tdd` handoff (see "Implementation Handoff" below) only if the user asked for
-   implementation.
+7. After Requirements are approved, continue automatically into `Design` (`design-author`).
+8. After Design is approved, continue automatically into `Implementation` (`agent-tdd`).
+9. After Implementation handoff, stop with a clear handoff message. (Implementation ownership
+   transfers to `agent-tdd`.)
 
 ## Continue Protocol
 
@@ -154,9 +171,12 @@ criterion and graceful-degradation rules are defined in `INTEROP.md`'s "→ agen
    Decision Order — `agent-nelly:nelly-orchestrator`'s stored Intent first (when available),
    then `workflow-state.md`, then `workflow-state.json`, then open blockers, then phase files,
    then `recap.md`).
-2. Continue from the earliest blocked or incomplete phase; auto-advance through later phases
+2. **[Phase 1.2]** Check cached nelly brief in `workflow-state.json` → `nelly_brief_cache`:
+   - If valid (Intent Hash match + timestamp fresh): reuse cached brief
+   - If invalid: fetch fresh brief via agent-nelly, update cache
+3. Continue from the earliest blocked or incomplete phase; auto-advance through later phases
    whose entry gates are satisfied.
-3. Pause only when a gate fails, a confirmation checkpoint is required, or implementation was
+4. Pause only when a gate fails, a confirmation checkpoint is required, or implementation was
    not requested.
 
 Do not restart from Requirements if a later phase is already the active incomplete phase,
