@@ -9,34 +9,121 @@ for both agent-isdd's own maintainers and the sibling plugins' maintainers to cr
 > `~/.claude/sdd-memory/users-jay-nelson-codebase-ai-plugins-claude-agent-isdd/spec/2026-08-12-isdd-plugin-scope-refactor/`
 > for the full requirements/design/tasks this repo was built from.
 
-## → agent-tdd (implementation)
+## → agent-tdd (implementation, Phase 2+3 revised)
 
-At the end of Tasks, once the Task Readiness Checklist passes and implementation is requested,
-`agent-isdd` constructs a **Slice Spec** from the approved `tasks.md`/`design.md` and spawns
-`agent-tdd:agent-TDD` directly (via the `Agent` tool), or `agent-tdd:test-author` first for
-`high-risk`-tier slices.
+**[Phase 2+3]** At the end of Design, once Design is approved and implementation is requested,
+`agent-isdd` constructs a **Design Spec** from the approved `requirements.md`/`design.md`, the
+cached research findings, and pre-fetched file summaries, then spawns `agent-tdd` for research
+validation, task slicing, and implementation.
 
-Field mapping (agent-isdd's artifact field → agent-tdd's expected Slice Spec field, per
-`agent-tdd`'s own `agents/agent-TDD.md` / `agents/test-author.md` / `INTEROP.md`):
+**Design Spec** includes:
+- Full `requirements.md` (approved)
+- Full `design.md` (approved, with Research Basis section)
+- `research/cache.md` (design_findings, task_findings, file_summaries, git_hashes)
+- Pre-fetched file summaries from agent-nelly cache (if available)
+- `recap.md` (summary, known risks, blockers, Goal alignment notes)
 
-| agent-isdd source | agent-tdd field |
-|---|---|
-| `tasks.md` phase's `Objective` + `Ordered Steps` | Task description |
-| `tasks.md` phase's `Test Intent` | Test Intent / acceptance criteria |
-| `tasks.md` phase's `Risk Tier` | Risk Tier |
-| `design.md`'s `Data Contracts And Interfaces` section (matching module/interface) | Data Contracts And Interfaces |
-| `agent-nelly` pre-slice brief, if available | Pre-Slice Brief |
-| (not set — default) | Review handoff mode (agent-tdd defaults to "pause for caller-driven review") |
+**Agent-tdd responsibilities** (Phase 2+3):
+1. **Research Validation** (optional re-research gaps only)
+   - Validate design.md's file touchpoints against research cache
+   - If cache is thin or inconsistent: run targeted deep-read only on gaps
+   - If design contradicts research: escalate back to agent-isdd
 
-`tasks.md`'s per-task `Depends On` field is deliberately not part of this mapping: the handoff
-spawns one Slice Spec (one task/phase) at a time, and phase ordering already carries the
-sequencing signal, so there is no cross-task ordering for `agent-tdd` to resolve on its side —
-assessed and decided against, not left unaddressed.
+2. **Task Slicing** (produce `tasks.md`)
+   - Produce phased, TDD-sized slices from Design + task_findings
+   - Validate slice safety (3 files max, testable, acyclic dependencies)
+   - Assign Risk Tiers (high-risk → spawn test-author first)
 
-This is a **one-directional handoff**: agent-isdd does not resume, monitor, or drive
-`agent-TDD` past the initial spawn. Whatever context resumes `agent-TDD` after its
-Green→Refactor review pause (via `SendMessage` to its agent id, per `agent-tdd`'s own contract)
-is outside agent-isdd's scope once the handoff is made.
+3. **Implementation** (Red-Green-Refactor per slice, existing behavior)
+
+This is a **one-directional handoff**: agent-isdd does not resume or monitor agent-tdd past
+the initial spawn. Task slicing happens inside agent-tdd (not handed back to agent-isdd as
+Slice Specs). Escalations back to agent-isdd (design contradicts research, research too thin)
+pause with explicit reason; agent-isdd resumes via its `before-continue` hook when user
+re-enters after addressing the escalation.
+
+### Agent-tdd Implementation Requirements (Phase 2+3)
+
+Agent-tdd must implement three new phases before Red-Green-Refactor:
+
+**Phase 1: Research Validation**
+- Input: Design Spec (requirements.md, design.md, research/cache.md, file_summaries)
+- Validate research completeness:
+  - Are design.md's file touchpoints in research/cache.md?
+  - Are interfaces documented?
+  - Are constraints captured?
+- Decision:
+  - ✓ Research thorough: proceed to slicing
+  - ✗ Research thin: run targeted research-consolidator (on gaps only)
+  - ✗ Design contradicts research: escalate back to agent-isdd (pause, surface reason)
+
+**Phase 2: Task Slicing**
+- Input: Requirements + Design + validated research + task_findings
+- Produce tasks.md with:
+  - Phased, TDD-sized slices (one behavior change, one file/module touched if possible)
+  - Risk Tiers per slice (high-risk → spawn test-author first)
+  - Depends On graph (topological sort, acyclic)
+  - Test Intent + Validation Target per slice
+- Rules: One behavior per slice, safe for Red-Green-Refactor isolation
+- Apply Ralph Loops (see below)
+
+**Phase 3: Validation (Ralph Loops)**
+
+Three autonomous validation loops, max 3-5 iterations each:
+
+1. **Slice Size Validation Loop**
+   - For each slice: count files, estimate test surface, verify Red-Green-Refactor feasibility
+   - If oversized: split, adjust dependencies
+   - Exit when: all slices ≤ 3 files, testable, no slice depends on > 2 others
+
+2. **Dependency Correctness Loop**
+   - Build Depends On graph, run topological sort
+   - Verify: acyclic, no hidden dependencies
+   - If cycle/missing dep: reorganize, re-slice
+   - Exit when: acyclic, complete
+
+3. **Research-to-Implementation Traceability Loop**
+   - For each slice's "Ordered Steps": validate against research/cache.md
+   - Verify: file/interface exists, constraint respected
+   - If missed research: run targeted deep-read, update cache, call agent-nelly
+   - If contradiction: flag as known risk in slice
+   - Exit when: traceable or flagged
+
+**Phase 4: Risk Tier Assignment**
+- high-risk when:
+  - design.md's Risks And Tradeoffs names a risk touching this slice's files
+  - Slice is a migration (schema, API breaking change)
+  - Touches multiple independent modules
+  - Weak testability
+- Default: standard
+
+**Phase 5: Ready-to-Implement Check**
+- Readiness checklist:
+  - [ ] At least one concrete phase exists
+  - [ ] Each phase has objective, Risk Tier, steps, test intent, validation target
+  - [ ] Slices are safe for TDD (≤ 3 files, acyclic dependencies)
+  - [ ] No unresolved blocker
+  - [ ] State: Ready For Implementation
+
+**Escalation Paths Back to agent-isdd:**
+- Research gap too large: pause, provide specific files needing research
+- Design contradicts research: pause, surface contradiction (design-author fixes)
+- Slicing requires product decision: pause, ask user which strategy
+- High-risk slice cannot be split: pause, confirm oversized + high-risk acceptable
+
+**Handoff Report Format:**
+```
+Verdict: ready | paused (with specific reason)
+Phase breakdown: 1-line summary
+Tasks file path: tasks/tasks.md
+Slicing confidence: high | medium (if research feels incomplete)
+Ralph Loops results: all passed | <loop name> iteration X of max
+```
+
+**After Tasks readiness passes:**
+- If verdict == `ready`: proceed to Red-Green-Refactor per slice (existing agent-tdd behavior)
+- If verdict == `paused`: return reason; user re-enters agent-isdd to address it
+- Do NOT proceed to implementation until readiness checklist fully passes
 
 **Availability check**: unlike `agent-nelly`, which is checked eagerly at `before-requirements`
 and cached in `workflow-state.json` because it is used throughout the workflow, `agent-tdd` is
@@ -147,14 +234,45 @@ unchanged by this dedup convention — it carries no brief-caching field.
 `agent-nelly:nelly-orchestrator` with a `new facts` batch containing any project-level
 discoveries worth persisting across future sessions — for example: interface assumptions
 confirmed or denied during requirements, coverage gaps or unexpected interfaces found during
-design research, risk flags raised by `tdd-planner`. The criterion is "would a future
-conversation benefit from knowing this independently of this feature's own artifacts?" — ephemeral
-workflow state (user confirmed step N, phase advanced) never qualifies. Choose the call shape by
-content: a positive discovery (a confirmed interface, a constraint, a risk) is a `new fact`/
-`new facts` batch; a discovery that a specific approach was tried and rejected (a design
-contradicted by a security finding, a task slice that had to be abandoned and resliced once the
-code was actually read) is an `error lesson` instead — a future session benefits more from being
-warned off the dead end than from a fact restating the final state. If the call fails or
-nelly is unavailable, log a one-line note in `recap.md` and continue — it is never a blocking
-condition. agent-nelly requires no changes to support this: `new facts` is already part of its
-standard call contract (see `agent-nelly`'s `INTEROP.md`).
+design research, risk flags raised. The criterion is "would a future conversation benefit from
+knowing this independently of this feature's own artifacts?" — ephemeral workflow state (user
+confirmed step N, phase advanced) never qualifies. Choose the call shape by content: a positive
+discovery (a confirmed interface, a constraint, a risk) is a `new fact`/`new facts` batch; a
+discovery that a specific approach was tried and rejected is an `error lesson` instead. If the
+call fails or nelly is unavailable, log a one-line note in `recap.md` and continue — it is never
+a blocking condition.
+
+**[Phase 2+3] File-level cache via `new facts` batches**: after `research-consolidator` completes
+during Design phase, `design-author` extracts `file_summaries` from the research output and
+persists them to agent-nelly via a `new facts` batch with type: `"file_summary"`. Schema per
+summary:
+
+```json
+{
+  "type": "file_summary",
+  "path": "src/api/client.ts",
+  "summary": "HTTP client wrapper with retry logic",
+  "exports": ["class ApiClient { request() }", "function retry<T>(...)"],
+  "constraints": ["Singleton: initialized once", "Not re-entrant"],
+  "tech_debt": ["Retry backoff hardcoded"],
+  "dependencies": ["axios", "events"],
+  "test_surface": ["Mock ApiClient.request()", "Test retry behavior"],
+  "migration_risks": ["Request state cached; changes to error handling must clear cache"],
+  "git_hash": "abc123def456",
+  "touched_by": [{"feature": "payment-flow", "date": "2026-08-22"}]
+}
+```
+
+Agent-nelly caches file summaries in `~/.claude/agent-nelly-memory/<project>/files/<slug>.json`
+for cross-feature reuse. When `agent-isdd` needs file context during a later feature (Design
+phase or agent-tdd slicing phase), it queries agent-nelly for cached summaries by file path;
+agent-nelly returns cache hits with git_hash validation and cache misses.
+
+Agent-nelly's file cache is optional and transparent to agent-isdd: if unavailable, agent-isdd
+continues without pre-loaded file context (slower, but correct). The integration assumes
+agent-nelly:nelly-orchestrator supports:
+- `type: "file_summary"` in `new facts` batches (storage)
+- A query interface to retrieve file summaries by path (retrieval, with git_hash validity check)
+
+This is documented here as the contract both plugins can cross-check; agent-nelly's own `INTEROP.md`
+is authoritative for its side of the contract.

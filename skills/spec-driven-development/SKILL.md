@@ -10,8 +10,8 @@ description: Orchestrates the intent spec-driven workflow — EARS requirements 
 Use this skill when the user wants one workflow that can:
 - generate or review specs
 - enforce a spec-driven process with hard phase gates
-- research the codebase and produce a testable design and TDD-sized task breakdown
-- hand off cleanly to implementation once the spec is approved
+- research the codebase and produce a testable design
+- hand off to implementation (research validation, task slicing, Red-Green-Refactor)
 - keep visible progress (breadcrumb + checklist) and goal-aware memory throughout
 
 This is the only user-facing entrypoint for the workflow unless the user explicitly asks for a
@@ -19,12 +19,12 @@ focused skill by name. It routes work across the companion skills internally:
 - `workflow-manager`
 - `requirements-agent`
 - `design-author`
-- `tdd-planner`
+- **[Phase 2+3]** `research-consolidator` (unified research, replaces separate planning-agent calls)
 
-It owns Requirements, Design, and Tasks only. Implementation is a separate plugin
-(`agent-tdd`), invoked once via a one-directional handoff — this skill never drives the
-Red-Green-Refactor loop or the code-review gate itself. See `INTEROP.md` at the repo root for
-the full handoff contract.
+It owns Requirements and Design only. Task slicing and implementation are owned by agent-tdd
+(`agent-tdd`), invoked once via a one-directional Design Spec handoff — this skill never drives
+task slicing, the Red-Green-Refactor loop, or the code-review gate itself. See `INTEROP.md` at
+the repo root for the full handoff contract.
 
 The user should not need to manually prompt each phase skill in order to move through the
 workflow.
@@ -202,16 +202,15 @@ workflow:
 
 - `spec-reviewer` — delegate when `requirements-agent` needs to assess an existing draft before
   rewriting it.
-- `tdd-planner` — delegate to generate `tasks.md` once Requirements are approved and Design is
-  coherent.
-- `planning-agent` — delegate before writing `design.md` or `tasks.md`, for wide-fast then
-  deep-focused codebase research.
+- **[Phase 2+3]** `research-consolidator` — delegate during Design to produce unified research
+  (design_findings, task_findings, file_summaries) in one pass, eliminating redundant research
+  between design-author and agent-tdd. Replaces the prior separate planning-agent calls.
 - `agent-nelly:nelly-orchestrator` — an external peer-plugin subagent, not one of this plugin's
   own `agents/`, invoked the same way (via the `Agent` tool with that literal `subagent_type`
   string), gated by the Availability Check — delegate before any phase starts, when available,
   for a goal-aware brief (Intent, Relevant entries, Intent alignment, Written); it is
   the sole writer into agent-nelly's own memory store, which agent-isdd never reads or writes
-  directly.
+  directly. **[Phase 2+3]** Also used to query and cache file summaries for cross-feature reuse.
 - `agent-ux:ux-agent` — an external peer-plugin subagent, delegate at every **phase transition**
   for chapter markers and the spec-canvas Artifact, via the UX Event Envelope (`caller:
   agent-isdd`, `event_type: phase_transition`, `phase_state`, `delta`, `artifact_path` — see
@@ -229,30 +228,42 @@ Delegation rules:
   their bounded sub-tasks (`spec-reviewer` for draft assessment; `planning-agent` for research)
   to subagents rather than doing that work in the main thread.
 
-## Implementation Handoff
+## Implementation Handoff (Phase 2+3 revised)
 
-Once `Tasks` passes its readiness checklist and implementation is requested, this skill's job
-is to build a **Slice Spec** and spawn `agent-tdd:agent-TDD` — a single, one-directional
-handoff, not an orchestrated multi-stage loop. See `INTEROP.md` at the repo root for the exact
-field mapping (`tasks.md`'s Objective/Ordered Steps/Test Intent/Risk Tier, `design.md`'s Data
-Contracts And Interfaces, and an optional `agent-nelly` Pre-Slice Brief).
+**[Phase 2+3]** Once Design is approved and implementation is requested, this skill's job is to
+build a **Design Spec** and spawn `agent-tdd` for research validation, task slicing, and
+implementation — a single, one-directional handoff, not an orchestrated multi-stage loop. See
+`INTEROP.md` at the repo root for the exact Design Spec contract (requirements.md, design.md,
+research/cache.md, pre-fetched file summaries, recap.md).
 
-1. If the slice's Risk Tier is `high-risk`, spawn `agent-tdd:test-author` first with the Task
-   description, Test Intent, and Data Contracts And Interfaces. Include its returned test
-   file(s) and failure confirmation in the next step's Slice Spec.
-2. Spawn `agent-tdd:agent-TDD` with the constructed Slice Spec.
-3. Take its returned handoff report, log the handoff in `recap.md`, set
-   `Workflow Status: Complete` in `workflow-state.md`.
-4. If the report's Handoff Facts field is non-empty and `agent_nelly_available` is `true` in
-   `workflow-state.json`, call `agent-nelly:nelly-orchestrator` with those facts as a `new facts`
-   batch. One call only — no re-fetch of the brief needed.
-5. Do not resume, monitor, or drive `agent-TDD` past this initial spawn — anything after its
-   own Green→Refactor review pause is outside this skill's scope.
-6. Before spawning, check the session's `<system-reminder>` agent-types block for
+1. Extract file list from `design.md` + `research/cache.md` (all files mentioned in Research Basis
+   and task_findings sections).
+2. Query `agent-nelly:nelly-orchestrator` for cached file summaries (if available):
+   - Pass file list to agent-nelly
+   - Receive cache hits (with git_hash validation) + cache misses
+   - Bundle cache hits into Design Spec handoff
+3. Construct **Design Spec** with:
+   - Full `requirements.md` (approved)
+   - Full `design.md` (approved, with Research Basis)
+   - `research/cache.md` (design_findings, task_findings, file_summaries, git_hashes)
+   - Pre-fetched file summaries from agent-nelly (if available)
+   - `recap.md` (summary, risks, blockers, Goal alignment)
+4. Before spawning, check the session's `<system-reminder>` agent-types block for
    `agent-tdd:agent-TDD`. If absent, pause with a concrete, actionable message (e.g. "agent-tdd
    is not installed in this session — install it before requesting implementation") rather than
-   attempting the work internally. (agent-nelly unavailability is already handled by
-   `workflow-manager`'s Availability Check at session start.)
+   attempting the work internally.
+5. Spawn `agent-tdd:agent-TDD` with the Design Spec (via the `Agent` tool).
+6. Take its returned handoff report:
+   - If report indicates research validation escalation: pause and surface reason (user re-enters
+     to address, then agent-isdd continues via before-continue hook)
+   - If report indicates slicing blockers: pause with specific blocker
+   - If report indicates implementation started: log handoff in `recap.md`, set
+     `Workflow Status: Complete`
+7. Do not resume, monitor, or drive `agent-TDD` past this initial spawn — anything after its
+   own review pauses or implementation is outside this skill's scope.
+8. If the report's Handoff Facts field is non-empty and `agent_nelly_available` is `true` in
+   `workflow-state.json`, call `agent-nelly:nelly-orchestrator` with those facts as a `new facts`
+   batch. One call only — no re-fetch of the brief needed.
 
 ## Requirements Gate
 

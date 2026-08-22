@@ -1,5 +1,142 @@
 # Changelog
 
+## 0.1.14 (Phase 2+3: Core Consolidation + Agent-Nelly Integration)
+
+### Breaking Changes
+
+- **Removed `skills/tdd-planner/SKILL.md` and `agents/tdd-planner.md`**
+  - Task slicing responsibility moved to `agent-tdd` (from agent-isdd)
+  - Workflow phases changed: Requirements → Design → Implementation (no Tasks phase in agent-isdd)
+  - Handoff changed from Slice Spec (per-task) to Design Spec (full specs at once)
+  - 1-week deprecation window: both tdd-planner and research-consolidator coexist in 0.1.13;
+    0.1.14 removes tdd-planner entirely. Downstream users should update to use agent-tdd's
+    new slicing capabilities before upgrading past 0.1.13.
+
+### Added (Phase 2+3)
+
+- **`agents/research-consolidator.md`**: New unified research agent
+  - Single pass produces dual output: design_findings + task_findings + file_summaries
+  - Replaces redundant planning-agent calls (design-author + tdd-planner)
+  - Saves 15-25K tokens per feature by eliminating research duplication
+  - Wraps planning-agent logic; consolidates outputs for both Design and Tasks phases
+
+- **Intent artifact as first-class, durable markdown**
+  - `intent/intent.md` template: Project Intent, Feature Goal, Success Signals, Anti-Patterns
+  - Intent Hash (SHA256) for drift detection throughout workflow
+  - Intent Alignment Status tracking in workflow-state.md
+  - Inline Intent-alignment check on before-continue (no nelly spawn needed)
+  - Enables explicit traceability: requirements → design → tasks reference Intent via hash anchor
+
+- **Persistent research cache**
+  - `research/cache.md` stores design_findings + task_findings + file_summaries
+  - Git hash tracking for automatic cache invalidation
+  - Agent-tdd reuses cache, skips re-research unless cache invalid
+  - Saves 15-25K tokens on resumed workflows where research is still valid
+
+- **Agent-nelly file-level cache**
+  - File summaries (exports, constraints, tech_debt, test_surface, migration_risks) cached
+  - Populated by research-consolidator, queried by agent-tdd
+  - Cross-feature reuse: 70-80% cache hit rate on features touching same modules
+  - Saves 15-25K tokens per cross-feature reuse
+  - Git hash validation ensures cache freshness
+
+- **Persistent nelly brief cache** (Phase 1.2)
+  - `workflow-state.json` → `nelly_brief_cache` with validation
+  - Reuse on workflow resume (Intent Hash + timestamp < 24h)
+  - Saves 5-10K tokens per resumed workflow
+
+- **Narrow wide-pass optimization** (Phase 1.3)
+  - planning-agent Pass 1 uses nelly brief hints to skip already-known files
+  - Candidate list: ~20-30 files instead of 100+
+  - Same deep-pass thoroughness, faster filtering
+  - Saves 3-5K tokens per research call
+
+### Changed
+
+- **Workflows phases revised** (Phase 2+3)
+  - Old: Requirements → Design → Tasks → Implementation
+  - New: Requirements → Design → Implementation (Tasks absorbed into Implementation)
+  - Agent-isdd owns Requirements + Design; agent-tdd owns task slicing + implementation
+  - Cleaner responsibility boundary; eliminates redundant research
+
+- **`skills/design-author/SKILL.md`** (Phase 2+3)
+  - Delegates to research-consolidator (not planning-agent)
+  - Caches task_findings in research/cache.md
+  - Persists file_summaries to agent-nelly for cross-feature cache
+  - Updated Design Gate to verify research cache + file summaries created
+
+- **`skills/spec-driven-development/SKILL.md`** (Phase 2+3)
+  - Start Protocol: creates intent.md, computes Intent Hash
+  - Continue Protocol: checks nelly brief cache, validates Intent alignment via hash
+  - Implementation Handoff: constructs Design Spec, pre-fetches file summaries from agent-nelly
+  - Removed tdd-planner references; added research-consolidator
+
+- **`INTEROP.md`** (Phase 2+3)
+  - New section: agent-nelly file cache contract (file_summary fact type, query interface)
+  - Revised → agent-tdd section: Design Spec handoff replaces Slice Spec
+  - Added agent-tdd implementation requirements: Research Validation, Task Slicing, Ralph Loops
+  - Escalation paths documented (design contradicts research, research too thin, etc.)
+
+- **`references/artifact-templates.md`** (Phase 1 + 2+3)
+  - Added `intent/intent.md` template (first artifact)
+  - Updated workflow-state.md: Intent Hash + Intent Alignment Status fields
+  - Updated recap.md: clarified Goal Alignment Notes section
+  - Phases: Requirements → Design → Implementation
+
+- **`references/workflow-state.template.json`** (Phase 1 + 2+3)
+  - Added: intent_hash, intent_alignment_status (Phase 1.1)
+  - Added: nelly_brief_cache, research_cache (Phase 1.2, 2+3)
+  - Updated current_phase enum (removed Tasks)
+
+### Token Efficiency Gains
+
+| Phase | Mechanism | Savings | Notes |
+|-------|-----------|---------|-------|
+| 1.1 | Intent capture | 0K | Foundation for drift detection |
+| 1.2 | Brief cache | 5-10K | Per resumed workflow |
+| 1.3 | Narrow wide-pass | 3-5K | Per research call |
+| 2+3 | Research consolidation | 15-25K | Eliminates tdd-planner re-research |
+| 2+3 | Research cache reuse | 15-25K | Agent-tdd skips re-research |
+| 2+3 | File cache (cross-feature) | 15-25K | Per cross-feature reuse |
+| **Total** | **All phases combined** | **~80-100K** | **50-70% reduction** |
+
+### Migration Guide
+
+For downstream users relying on tdd-planner:
+
+1. **Phase 1**: 0.1.13 maintains both tdd-planner (agent-isdd) and research-consolidator.
+   - Handoff flow: agent-isdd → Slice Spec (per-task) to agent-tdd
+   - Still works; no immediate action needed
+
+2. **Phase 2**: Upgrade agent-tdd to support Design Spec handoff + task slicing + research validation
+   - Refer to INTEROP.md's "Agent-tdd Implementation Requirements" section
+   - Includes Ralph Loops for slice validation
+
+3. **Phase 3** (after 0.1.14): agent-isdd drops tdd-planner entirely
+   - Requires agent-tdd to be updated per Phase 2
+   - No backwards compatibility
+
+### Fixed
+
+- Workflow state representation: `workflow-state.md` phases simplified (no Tasks for agent-isdd)
+- Intent drift detection: hash-based comparison reliable and cheap vs. full brief re-fetch
+- Research redundancy: consolidated pass eliminates tdd-planner calling planning-agent again
+
+## 0.1.13 (Phase 1: Quick Wins)
+
+### Added
+
+- Intent artifact capture: intent.md template, Intent Hash, Intent Alignment Status
+- Persistent nelly brief cache: reuse on workflow resume, Intent Hash + timestamp validation
+- Narrow wide-pass optimization: planning-agent uses nelly hints to skip known files
+
+### Token Savings
+
+- Phase 1.1: Intent drift detection (0K, foundation)
+- Phase 1.2: Brief cache reuse (5-10K per resumed workflow)
+- Phase 1.3: Narrow wide-pass (3-5K per research call)
+- **Total**: ~20-30K per feature
+
 ## 0.1.12
 
 ### Changed
